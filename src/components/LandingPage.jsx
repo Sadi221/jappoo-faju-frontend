@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Heart, Shield, Users, ChevronRight, ArrowRight, CheckCircle, Clock, TrendingUp } from 'lucide-react';
 import { medicalRequestsAPI } from '../services/api';
 
@@ -44,6 +45,7 @@ const JappooFajuLogo = ({ size = 48 }) => (
 );
 
 const LandingPage = () => {
+  const navigate = useNavigate();
   const [scrollY, setScrollY] = useState(0);
   const [urgentCases, setUrgentCases] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -155,7 +157,8 @@ const LandingPage = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-            <button className="px-6 py-2.5 text-blue-600 font-semibold hover:bg-blue-50 rounded-xl transition-all">
+            <button onClick={() => navigate('/auth')}
+className="px-6 py-2.5 text-blue-600 font-semibold hover:bg-blue-50 rounded-xl transition-all">
               Connexion
             </button>
             <button className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-xl hover:shadow-blue-500/30 transition-all transform hover:scale-105">
