@@ -11,10 +11,17 @@ console.log('🔗 API URL:', API_BASE_URL);
 
 // Instance axios configurée
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: 'https://jappoo-faju-backend-production-b1f1.up.railway.app',
   headers: {
     'Content-Type': 'application/json',
   },
+  // Force toutes les requêtes en HTTPS
+  adapter: (config) => {
+    if (config.url && config.url.includes('http://')) {
+      config.url = config.url.replace('http://', 'https://');
+    }
+    return axios.getAdapter(axios.defaults.adapter)(config);
+  }
 });
 
 // Intercepteur pour ajouter le token JWT si disponible
