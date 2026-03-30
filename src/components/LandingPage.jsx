@@ -203,13 +203,13 @@ className="px-6 py-2.5 text-blue-600 font-semibold hover:bg-blue-50 rounded-xl t
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <<button onClick={() => navigate('/auth')} className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-blue-500/40 transition-all transform hover:scale-105 flex items-center justify-center space-x-2">
+                <button onClick={() => navigate('/auth')} className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-blue-500/40 transition-all transform hover:scale-105 flex items-center justify-center space-x-2">
                   <Heart size={20} fill="white" />
                   <span>Faire un don maintenant</span>
                   <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
                 </button>
                 
-                <button onClick={() => navigate('/auth')} className="px-8 py-4 bg-white... border-2 border-blue-200 text-blue-600 font-bold rounded-2xl hover:bg-blue-50 transition-all flex items-center justify-center space-x-2">
+                <button onClick={() => navigate('/auth')} className="px-8 py-4 bg-white border-2 border-blue-200 text-blue-600 font-bold rounded-2xl hover:bg-blue-50 transition-all flex items-center justify-center space-x-2">
                   <span>Je suis un hôpital</span>
                   <ChevronRight size={20} />
                 </button>
