@@ -1,7 +1,13 @@
 import axios from 'axios';
 
-// URL de ton API Railway - FORCE HTTPS
-const API_BASE_URL = 'https://jappoo-faju-backend-production-b1f1.up.railway.app';
+// ========== CONFIGURATION API URL ==========
+// PROTECTION TRIPLE CONTRE HTTP
+const RAW_URL = import.meta.env.VITE_API_BASE_URL || 'https://jappoo-faju-backend-production-b1f1.up.railway.app';
+const HTTPS_URL = RAW_URL.replace(/^http:/, 'https:');
+const API_BASE_URL = HTTPS_URL;
+
+// DEBUG: Affiche l'URL utilisée
+console.log('🔗 API URL:', API_BASE_URL);
 
 // Instance axios configurée
 const api = axios.create({
@@ -14,6 +20,15 @@ const api = axios.create({
 // Intercepteur pour ajouter le token JWT si disponible
 api.interceptors.request.use(
   (config) => {
+    // SÉCURITÉ: Force HTTPS dans l'URL finale
+    if (config.url && !config.url.startsWith('http')) {
+      config.url = API_BASE_URL + config.url;
+    }
+    if (config.url && config.url.startsWith('http:')) {
+      config.url = config.url.replace('http:', 'https:');
+      console.warn('⚠️  URL forcée en HTTPS:', config.url);
+    }
+    
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
