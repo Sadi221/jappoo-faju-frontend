@@ -5,7 +5,12 @@ import DonorDashboard from './components/DonorDashboard';
 import HospitalDashboard from './components/HospitalDashboard';
 import AdminDashboard from './components/AdminDashboard';  // ← AJOUTÉ
 
+
+
 function App() {
+  console.log('🔍 VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
+  console.log('🔍 MODE:', import.meta.env.MODE);
+  
   return (
     <Router>
       <Routes>
