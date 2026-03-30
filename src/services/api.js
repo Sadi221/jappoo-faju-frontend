@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // URL de ton API Railway - FORCE HTTPS
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://jappoo-faju-backend-production-b1f1.up.railway.app').replace('http://', 'https://');
+const API_BASE_URL = 'https://jappoo-faju-backend-production-b1f1.up.railway.app';
 
 // Instance axios configurée
 const api = axios.create({
