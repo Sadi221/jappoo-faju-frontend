@@ -224,8 +224,12 @@ const HospitalDashboard = () => {
               <p className="font-bold text-slate-800">{hospital.name}</p>
               <p className="text-sm text-slate-500">{hospital.address}</p>
             </div>
-            <span className={`px-3 py-1 rounded-full text-xs font-bold ${hospital.is_verified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-              {hospital.is_verified ? '✓ Vérifié' : 'En attente de vérification'}
+            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+              hospital.is_verified ? 'bg-green-100 text-green-700' :
+              hospital.is_rejected ? 'bg-red-100 text-red-700' :
+              'bg-yellow-100 text-yellow-700'
+            }`}>
+              {hospital.is_verified ? '✓ Vérifié' : hospital.is_rejected ? '✗ Rejeté — contactez l\'admin' : 'En attente de vérification'}
             </span>
           </div>
         ) : (

@@ -181,6 +181,12 @@ export const hospitalsAPI = {
     const response = await api.patch(`/hospitals/${id}/verify`);
     return response.data;
   },
+
+  // Rejeter un hôpital (ADMIN)
+  reject: async (id) => {
+    const response = await api.patch(`/hospitals/${id}/reject`);
+    return response.data;
+  },
 };
 
 // ========== STATISTIQUES (pour la landing page) ==========

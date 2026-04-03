@@ -52,13 +52,26 @@ const AdminDashboard = () => {
   }, [user]);
 
   const handleVerifyHospital = async (hospitalId) => {
-    setActionLoading(hospitalId);
+    setActionLoading(hospitalId + '_verify');
     try {
       await hospitalsAPI.verify(hospitalId);
-      setHospitals(prev => prev.map(h => h.id === hospitalId ? { ...h, is_verified: true } : h));
+      setHospitals(prev => prev.map(h => h.id === hospitalId ? { ...h, is_verified: true, is_rejected: false } : h));
     } catch (err) {
       console.error('Erreur vérification hôpital:', err);
       alert('Erreur lors de la vérification');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRejectHospital = async (hospitalId) => {
+    setActionLoading(hospitalId + '_reject');
+    try {
+      await hospitalsAPI.reject(hospitalId);
+      setHospitals(prev => prev.map(h => h.id === hospitalId ? { ...h, is_rejected: true, is_verified: false } : h));
+    } catch (err) {
+      console.error('Erreur rejet hôpital:', err);
+      alert('Erreur lors du rejet');
     } finally {
       setActionLoading(null);
     }
@@ -352,21 +365,33 @@ const AdminDashboard = () => {
                       <p className="text-xs text-slate-400 mt-1">N° {hospital.registration_number}</p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${
-                      hospital.is_verified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                      hospital.is_verified ? 'bg-green-100 text-green-700' :
+                      hospital.is_rejected ? 'bg-red-100 text-red-700' :
+                      'bg-yellow-100 text-yellow-700'
                     }`}>
-                      {hospital.is_verified ? '✓ Vérifié' : 'En attente'}
+                      {hospital.is_verified ? '✓ Vérifié' : hospital.is_rejected ? '✗ Rejeté' : 'En attente'}
                     </span>
                   </div>
 
-                  {!hospital.is_verified && (
-                    <button
-                      onClick={() => handleVerifyHospital(hospital.id)}
-                      disabled={actionLoading === hospital.id}
-                      className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-green-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
-                    >
-                      <CheckCircle size={18} />
-                      {actionLoading === hospital.id ? 'Vérification...' : 'Vérifier cet hôpital'}
-                    </button>
+                  {!hospital.is_verified && !hospital.is_rejected && (
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => handleRejectHospital(hospital.id)}
+                        disabled={!!actionLoading}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-100 text-red-700 font-semibold rounded-xl hover:bg-red-200 transition-all disabled:opacity-50"
+                      >
+                        <XCircle size={18} />
+                        {actionLoading === hospital.id + '_reject' ? 'Rejet...' : 'Rejeter'}
+                      </button>
+                      <button
+                        onClick={() => handleVerifyHospital(hospital.id)}
+                        disabled={!!actionLoading}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-green-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
+                      >
+                        <CheckCircle size={18} />
+                        {actionLoading === hospital.id + '_verify' ? 'Validation...' : 'Valider'}
+                      </button>
+                    </div>
                   )}
                 </div>
               ))}
