@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, Shield, Users, ChevronRight, ArrowRight, CheckCircle, Clock, TrendingUp } from 'lucide-react';
 import { medicalRequestsAPI } from '../services/api';
+import DonationModal from '../components/DonationModal';
 
 // Composant Logo JAPPOO FAJU
 const JappooFajuLogo = ({ size = 48 }) => (
@@ -50,50 +51,49 @@ const LandingPage = () => {
   const [urgentCases, setUrgentCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
+  const [donationModalOpen, setDonationModalOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Charger les demandes ACTIVE depuis l'API
+  // ✅ FIX 1 — Charger les demandes ACTIVE sans renommer les champs
   useEffect(() => {
     const fetchUrgentCases = async () => {
       try {
         setLoading(true);
         const response = await medicalRequestsAPI.getAll({ status: 'ACTIVE', limit: 20 });
-        
-        // Transformer les données de l'API pour le format attendu
+
+        // On conserve TOUS les champs originaux de l'API (dont l'UUID réel)
+        // et on ajoute uniquement daysLeft calculé côté frontend
         const formattedCases = response.map(request => ({
-          id: request.id,
-          patient: request.patient_pseudonym,
-          need: request.medical_need,
-          description: request.description,
-          amount: request.amount_needed,
-          raised: request.amount_raised,
-          urgency: request.urgency_level,
-          hospital: request.hospital_id, // On affichera juste l'ID pour l'instant
-          daysLeft: request.expiry_date 
+          ...request,
+          daysLeft: request.expiry_date
             ? Math.ceil((new Date(request.expiry_date) - new Date()) / (1000 * 60 * 60 * 24))
             : null
         }));
-        
+
         setUrgentCases(formattedCases);
         setError(null);
       } catch (err) {
         console.error('Erreur lors du chargement des demandes:', err);
         setError('Impossible de charger les demandes. Veuillez réessayer.');
-        // En cas d'erreur, utiliser des données de démonstration
+
+        // ✅ FIX 1b — Fallback avec noms de champs originaux (id: null pour désactiver le bouton don)
         setUrgentCases([
           {
-            id: 1,
-            patient: "Patient DK-2026-045",
-            need: "Dialyse rénale",
-            amount: 850000,
-            raised: 320000,
-            urgency: "CRITICAL",
-            hospital: "Hôpital Principal de Dakar",
+            id: null,
+            patient_pseudonym: "Patient DK-2026-045",
+            medical_need: "Dialyse rénale",
+            description: "Patient en attente de dialyse rénale urgente.",
+            amount_needed: 850000,
+            amount_raised: 320000,
+            urgency_level: "CRITICAL",
+            hospital_id: "Hôpital Principal de Dakar",
             daysLeft: 3
           }
         ]);
@@ -104,6 +104,12 @@ const LandingPage = () => {
 
     fetchUrgentCases();
   }, []);
+
+  // Fonction pour ouvrir le modal de donation
+  const handleDonateClick = (medicalRequest) => {
+    setSelectedRequest(medicalRequest);
+    setDonationModalOpen(true);
+  };
 
   const stats = [
     { value: "15,000", label: "Vies à sauver", icon: Heart },
@@ -149,7 +155,7 @@ const LandingPage = () => {
               <p className="text-xs text-slate-500 -mt-1">Solidarité santé instantanée</p>
             </div>
           </div>
-          
+
           <div className="hidden md:flex items-center space-x-8">
             <a href="#comment" className="text-slate-600 hover:text-blue-600 font-medium transition-colors">Comment ça marche</a>
             <a href="#urgences" className="text-slate-600 hover:text-blue-600 font-medium transition-colors">Cas urgents</a>
@@ -169,11 +175,10 @@ const LandingPage = () => {
 
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 px-6 overflow-hidden">
-        {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl animate-pulse" 
+          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl animate-pulse"
                style={{ animationDuration: '4s' }}></div>
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-cyan-400/20 rounded-full blur-3xl animate-pulse" 
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-cyan-400/20 rounded-full blur-3xl animate-pulse"
                style={{ animationDuration: '6s', animationDelay: '1s' }}></div>
         </div>
 
@@ -195,7 +200,7 @@ const LandingPage = () => {
               </h1>
 
               <p className="text-xl text-slate-600 leading-relaxed max-w-xl">
-                JAPPOO FAJU connecte les hôpitaux sénégalais aux donateurs du monde entier. 
+                JAPPOO FAJU connecte les hôpitaux sénégalais aux donateurs du monde entier.
                 <span className="font-semibold text-slate-800"> 100% transparent.</span>
                 <span className="font-semibold text-slate-800"> 0% de frais.</span>
                 <span className="font-semibold text-slate-800"> Chaque franc compte.</span>
@@ -207,7 +212,7 @@ const LandingPage = () => {
                   <span>Faire un don maintenant</span>
                   <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
                 </button>
-                
+
                 <button onClick={() => navigate('/auth')} className="px-8 py-4 bg-white border-2 border-blue-200 text-blue-600 font-bold rounded-2xl hover:bg-blue-50 transition-all flex items-center justify-center space-x-2">
                   <span>Je suis un hôpital</span>
                   <ChevronRight size={20} />
@@ -231,7 +236,7 @@ const LandingPage = () => {
             {/* Right - Featured Urgent Case */}
             <div className="relative">
               <div className="absolute -inset-4 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-3xl blur-2xl opacity-20 animate-pulse"></div>
-              
+
               <div className="relative bg-white rounded-3xl shadow-2xl p-8 space-y-6 border border-blue-100">
                 <div className="flex items-center justify-between">
                   <span className="px-4 py-2 bg-red-100 text-red-700 rounded-full text-sm font-bold flex items-center space-x-2">
@@ -262,7 +267,18 @@ const LandingPage = () => {
                   </div>
                 </div>
 
-                <button onClick={() => navigate('/auth')} className="w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl hover:shadow-xl hover:shadow-blue-500/30 transition-all transform hover:scale-105 flex items-center justify-center space-x-2">
+                {/* ✅ FIX 3 — Bouton hero card avec className et disabled si pas d'ID */}
+                <button
+                  onClick={() => {
+                    if (urgentCases?.length > 0 && urgentCases[0].id) {
+                      handleDonateClick(urgentCases[0]);
+                    } else {
+                      alert('Aucune demande médicale disponible pour le moment.');
+                    }
+                  }}
+                  disabled={!urgentCases?.length || !urgentCases[0]?.id}
+                  className="w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl hover:shadow-xl hover:shadow-blue-500/30 transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <Heart size={20} fill="white" />
                   <span>Contribuer maintenant</span>
                 </button>
@@ -332,7 +348,6 @@ const LandingPage = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 relative">
-            {/* Connecting Lines */}
             <div className="hidden md:block absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-blue-200 via-purple-200 to-red-200 -translate-y-1/2 z-0"></div>
 
             {howItWorks.map((item, i) => (
@@ -394,7 +409,6 @@ const LandingPage = () => {
 
           <div className="grid md:grid-cols-3 gap-8">
             {loading ? (
-              // Skeleton loader pendant le chargement
               [1, 2, 3].map((i) => (
                 <div key={i} className="bg-white rounded-2xl shadow-xl overflow-hidden border border-blue-100 animate-pulse">
                   <div className="h-2 bg-slate-200"></div>
@@ -408,62 +422,67 @@ const LandingPage = () => {
                 </div>
               ))
             ) : error ? (
-              // Message d'erreur
               <div className="col-span-3 text-center py-12">
                 <p className="text-red-600 mb-4">{error}</p>
-                <button 
-                  onClick={() => window.location.reload()} 
+                <button
+                  onClick={() => window.location.reload()}
                   className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700"
                 >
                   Réessayer
                 </button>
               </div>
             ) : urgentCases.length === 0 ? (
-              // Aucune demande
               <div className="col-span-3 text-center py-12">
                 <p className="text-slate-600 text-lg">Aucune demande urgente pour le moment.</p>
               </div>
             ) : (
-              // Afficher les vraies demandes (limité à 3 pour la landing page)
+              // ✅ FIX 2 — Utiliser les noms de champs originaux de l'API
               urgentCases.slice(0, 3).map((case_) => (
-              <div key={case_.id} className="bg-white rounded-2xl shadow-xl overflow-hidden border border-blue-100 hover:shadow-2xl hover:-translate-y-1 transition-all group">
-                <div className={`h-2 ${case_.urgency === 'CRITIQUE' ? 'bg-red-500' : 'bg-orange-500'}`}></div>
-                
-                <div className="p-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className={`px-3 py-1 ${case_.urgency === 'CRITIQUE' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'} rounded-full text-xs font-bold`}>
-                      {case_.urgency} • {case_.daysLeft}J restants
-                    </span>
-                    <Heart className="text-slate-300 group-hover:text-red-500 group-hover:scale-110 transition-all cursor-pointer" size={20} />
-                  </div>
+                <div key={case_.id ?? case_.patient_pseudonym} className="bg-white rounded-2xl shadow-xl overflow-hidden border border-blue-100 hover:shadow-2xl hover:-translate-y-1 transition-all group">
+                  <div className={`h-2 ${case_.urgency_level === 'CRITICAL' ? 'bg-red-500' : 'bg-orange-500'}`}></div>
 
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-800 mb-1">{case_.need}</h3>
-                    <p className="text-sm text-slate-500">{case_.patient}</p>
-                    <p className="text-xs text-slate-400 mt-1">{case_.hospital}</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-blue-600 to-cyan-500 rounded-full"
-                           style={{ width: `${(case_.raised / case_.amount) * 100}%` }}></div>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="font-semibold text-blue-600">
-                        {case_.raised.toLocaleString()} FCFA
+                  <div className="p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className={`px-3 py-1 ${case_.urgency_level === 'CRITICAL' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'} rounded-full text-xs font-bold`}>
+                        {case_.urgency_level} • {case_.daysLeft ? `${case_.daysLeft}J restants` : 'En cours'}
                       </span>
-                      <span className="text-slate-500">
-                        sur {case_.amount.toLocaleString()} FCFA
-                      </span>
+                      <Heart className="text-slate-300 group-hover:text-red-500 group-hover:scale-110 transition-all cursor-pointer" size={20} />
                     </div>
-                  </div>
 
-                  <button className="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all transform group-hover:scale-105">
-                    Contribuer
-                  </button>
+                    <div>
+                      <h3 className="text-xl font-bold text-slate-800 mb-1">{case_.medical_need}</h3>
+                      <p className="text-sm text-slate-500">{case_.patient_pseudonym}</p>
+                      <p className="text-xs text-slate-400 mt-1">{case_.hospital_id}</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-600 to-cyan-500 rounded-full"
+                          style={{ width: `${Math.min((case_.amount_raised / case_.amount_needed) * 100, 100)}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="font-semibold text-blue-600">
+                          {case_.amount_raised?.toLocaleString()} FCFA
+                        </span>
+                        <span className="text-slate-500">
+                          sur {case_.amount_needed?.toLocaleString()} FCFA
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* ✅ FIX 2b — Bouton désactivé si pas d'UUID valide (fallback) */}
+                    <button
+                      onClick={() => handleDonateClick(case_)}
+                      disabled={!case_.id}
+                      className="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all transform group-hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Contribuer
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))
+              ))
             )}
           </div>
         </div>
@@ -472,9 +491,9 @@ const LandingPage = () => {
       {/* CTA Final */}
       <section className="py-32 px-6 bg-gradient-to-br from-blue-600 via-purple-600 to-cyan-600 relative overflow-hidden">
         <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-0 left-0 w-full h-full" 
-               style={{ 
-                 backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` 
+          <div className="absolute top-0 left-0 w-full h-full"
+               style={{
+                 backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
                }}>
           </div>
         </div>
@@ -487,7 +506,7 @@ const LandingPage = () => {
           <p className="text-2xl text-blue-100 mb-12">
             Ensemble, nous pouvons sauver des milliers de vies
           </p>
-          
+
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <button className="px-10 py-5 bg-white text-blue-600 font-bold text-lg rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105">
               Devenir donateur
@@ -555,6 +574,13 @@ const LandingPage = () => {
           </div>
         </div>
       </footer>
+
+      {/* Modal de donation */}
+      <DonationModal
+        isOpen={donationModalOpen}
+        onClose={() => setDonationModalOpen(false)}
+        medicalRequest={selectedRequest}
+      />
 
       <style jsx>{`
         @keyframes fade-in {

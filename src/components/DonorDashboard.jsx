@@ -164,7 +164,7 @@ const DonorDashboard = () => {
 
             {/* Filtre urgence */}
             <div className="flex gap-2">
-              {['ALL', 'CRITICAL', 'URGENT', 'MODERATE'].map((urgency) => (
+              {['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((urgency) => (
                 <button
                   key={urgency}
                   onClick={() => setFilterUrgency(urgency)}
@@ -174,7 +174,7 @@ const DonorDashboard = () => {
                       : 'bg-white text-slate-600 hover:bg-blue-50 border border-slate-200'
                   }`}
                 >
-                  {urgency === 'ALL' ? 'Tous' : urgency === 'CRITICAL' ? 'Critique' : urgency === 'URGENT' ? 'Urgent' : 'Modéré'}
+                  {urgency === 'ALL' ? 'Tous' : urgency === 'CRITICAL' ? 'Critique' : urgency === 'HIGH' ? 'Élevé' : urgency === 'MEDIUM' ? 'Moyen' : 'Faible'}
                 </button>
               ))}
             </div>
@@ -218,8 +218,9 @@ const DonorDashboard = () => {
                   {/* Barre de couleur selon urgence */}
                   <div className={`h-2 ${
                     request.urgency_level === 'CRITICAL' ? 'bg-red-500' :
-                    request.urgency_level === 'URGENT' ? 'bg-orange-500' :
-                    'bg-yellow-500'
+                    request.urgency_level === 'HIGH' ? 'bg-orange-500' :
+                    request.urgency_level === 'MEDIUM' ? 'bg-yellow-500' :
+                    'bg-blue-400'
                   }`}></div>
 
                   <div className="p-6 space-y-4">
@@ -227,8 +228,9 @@ const DonorDashboard = () => {
                     <div className="flex items-center justify-between">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                         request.urgency_level === 'CRITICAL' ? 'bg-red-100 text-red-700' :
-                        request.urgency_level === 'URGENT' ? 'bg-orange-100 text-orange-700' :
-                        'bg-yellow-100 text-yellow-700'
+                        request.urgency_level === 'HIGH' ? 'bg-orange-100 text-orange-700' :
+                        request.urgency_level === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-blue-100 text-blue-700'
                       }`}>
                         {request.urgency_level} {daysLeft !== null && `• ${daysLeft}J`}
                       </span>

@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, LogOut, User, Plus, FileText, AlertTriangle, CheckCircle, X } from 'lucide-react';
-import { medicalRequestsAPI, authAPI } from '../services/api';
+import { medicalRequestsAPI, authAPI, hospitalsAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 const HospitalDashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [hospital, setHospital] = useState(null);
+  const [showHospitalForm, setShowHospitalForm] = useState(false);
+  const [hospitalFormData, setHospitalFormData] = useState({ name: '', address: '', phone: '', registration_number: '' });
+  const [hospitalLoading, setHospitalLoading] = useState(false);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -23,18 +27,22 @@ const HospitalDashboard = () => {
     expiry_date: '',
   });
 
-  // Charger l'utilisateur connecté
+  // Charger l'utilisateur connecté + son hôpital
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const userData = await authAPI.getCurrentUser();
         setUser(userData);
-        
-        if (userData.role !== 'HOSPITAL_AGENT') {
-          navigate('/');
+        if (userData.role !== 'HOSPITAL_AGENT') { navigate('/'); return; }
+
+        try {
+          const h = await hospitalsAPI.getMyHospital();
+          setHospital(h);
+        } catch {
+          setHospital(null); // Pas encore de profil hôpital
         }
       } catch (err) {
-        console.error('Erreur lors du chargement de l\'utilisateur:', err);
+        console.error('Erreur chargement utilisateur:', err);
         navigate('/auth');
       }
     };
@@ -66,16 +74,32 @@ const HospitalDashboard = () => {
     navigate('/');
   };
 
+  // Créer le profil hôpital
+  const handleCreateHospital = async (e) => {
+    e.preventDefault();
+    setHospitalLoading(true);
+    try {
+      const h = await hospitalsAPI.create(hospitalFormData);
+      setHospital(h);
+      setShowHospitalForm(false);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Erreur lors de la création du profil hôpital');
+    } finally {
+      setHospitalLoading(false);
+    }
+  };
+
   // Gérer la soumission du formulaire
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!hospital) { alert("Veuillez d'abord créer votre profil hôpital."); return; }
     setCreateLoading(true);
     setCreateError('');
     setCreateSuccess(false);
 
     try {
       const requestData = {
-        hospital_id: user.id,
+        hospital_id: hospital.id,
         patient_pseudonym: formData.patient_pseudonym,
         medical_need: formData.medical_need,
         description: formData.description,
@@ -173,6 +197,33 @@ const HospitalDashboard = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
+
+        {/* Bandeau profil hôpital */}
+        {hospital ? (
+          <div className="mb-6 p-4 bg-white rounded-2xl border border-blue-100 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-xs text-slate-500 mb-1">Établissement enregistré</p>
+              <p className="font-bold text-slate-800">{hospital.name}</p>
+              <p className="text-sm text-slate-500">{hospital.address}</p>
+            </div>
+            <span className={`px-3 py-1 rounded-full text-xs font-bold ${hospital.is_verified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+              {hospital.is_verified ? '✓ Vérifié' : 'En attente de vérification'}
+            </span>
+          </div>
+        ) : (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-2xl flex items-center justify-between">
+            <p className="text-yellow-800 font-semibold">
+              ⚠️ Vous n'avez pas encore de profil hôpital. Créez-en un pour soumettre des demandes.
+            </p>
+            <button
+              onClick={() => setShowHospitalForm(true)}
+              className="ml-4 px-4 py-2 bg-yellow-500 text-white font-semibold rounded-xl hover:bg-yellow-600 transition-all whitespace-nowrap"
+            >
+              Créer mon profil
+            </button>
+          </div>
+        )}
+
         {/* Bouton créer une demande */}
         <div className="mb-8 flex justify-between items-center">
           <div>
@@ -181,7 +232,8 @@ const HospitalDashboard = () => {
           </div>
           <button
             onClick={() => setShowCreateForm(true)}
-            className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all"
+            disabled={!hospital}
+            className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Plus size={20} />
             <span>Nouvelle demande</span>
@@ -275,6 +327,63 @@ const HospitalDashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Modal création profil hôpital */}
+      {showHospitalForm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-600 to-cyan-500 p-6 text-white relative">
+              <button onClick={() => setShowHospitalForm(false)} className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-xl">
+                <X size={20} />
+              </button>
+              <h2 className="text-2xl font-bold">Profil de votre établissement</h2>
+              <p className="text-blue-100 mt-1">Ces informations sont nécessaires pour valider vos demandes</p>
+            </div>
+            <form onSubmit={handleCreateHospital} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Nom de l'établissement</label>
+                <input required type="text" value={hospitalFormData.name}
+                  onChange={e => setHospitalFormData({...hospitalFormData, name: e.target.value})}
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Ex: Hôpital Principal de Dakar" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Adresse</label>
+                <input required type="text" value={hospitalFormData.address}
+                  onChange={e => setHospitalFormData({...hospitalFormData, address: e.target.value})}
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Ex: Avenue Cheikh Anta Diop, Dakar" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Téléphone</label>
+                  <input required type="tel" value={hospitalFormData.phone}
+                    onChange={e => setHospitalFormData({...hospitalFormData, phone: e.target.value})}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="+221 XX XXX XX XX" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">N° d'enregistrement</label>
+                  <input required type="text" value={hospitalFormData.registration_number}
+                    onChange={e => setHospitalFormData({...hospitalFormData, registration_number: e.target.value})}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Ex: SN-HOP-2024-001" />
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setShowHospitalForm(false)}
+                  className="flex-1 py-3 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition-all">
+                  Annuler
+                </button>
+                <button type="submit" disabled={hospitalLoading}
+                  className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all disabled:opacity-50">
+                  {hospitalLoading ? 'Création...' : 'Créer le profil'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Modal de création */}
       {showCreateForm && (

@@ -1,41 +1,21 @@
 import axios from 'axios';
 
 // ========== CONFIGURATION API URL ==========
-// PROTECTION TRIPLE CONTRE HTTP
-const RAW_URL = import.meta.env.VITE_API_BASE_URL || 'https://jappoo-faju-backend-production-b1f1.up.railway.app';
-const HTTPS_URL = RAW_URL.replace(/^http:/, 'https:');
-const API_BASE_URL = HTTPS_URL;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://jappoo-faju-backend-production-b1f1.up.railway.app';
 
-// DEBUG: Affiche l'URL utilisée
 console.log('🔗 API URL:', API_BASE_URL);
 
 // Instance axios configurée
 const api = axios.create({
-  baseURL: 'https://jappoo-faju-backend-production-b1f1.up.railway.app',
+  baseURL: `${API_BASE_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
-  },
-  // Force toutes les requêtes en HTTPS
-  adapter: (config) => {
-    if (config.url && config.url.includes('http://')) {
-      config.url = config.url.replace('http://', 'https://');
-    }
-    return axios.getAdapter(axios.defaults.adapter)(config);
   }
 });
 
 // Intercepteur pour ajouter le token JWT si disponible
 api.interceptors.request.use(
   (config) => {
-    // SÉCURITÉ: Force HTTPS dans l'URL finale
-    if (config.url && !config.url.startsWith('http')) {
-      config.url = API_BASE_URL + config.url;
-    }
-    if (config.url && config.url.startsWith('http:')) {
-      config.url = config.url.replace('http:', 'https:');
-      console.warn('⚠️  URL forcée en HTTPS:', config.url);
-    }
-    
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -52,13 +32,13 @@ api.interceptors.request.use(
 export const authAPI = {
   // Inscription
   register: async (userData) => {
-    const response = await api.post('/api/auth/register', userData);
+    const response = await api.post('/auth/register', userData);
     return response.data;
   },
 
   // Connexion
   login: async (credentials) => {
-    const response = await api.post('/api/auth/login', credentials);
+    const response = await api.post('/auth/login', credentials);
     if (response.data.access_token) {
       localStorage.setItem('token', response.data.access_token);
     }
@@ -67,7 +47,7 @@ export const authAPI = {
 
   // Récupérer l'utilisateur connecté
   getCurrentUser: async () => {
-    const response = await api.get('/api/auth/me');
+    const response = await api.get('/auth/me');
     return response.data;
   },
 
@@ -82,31 +62,31 @@ export const authAPI = {
 export const medicalRequestsAPI = {
   // Récupérer toutes les demandes (avec filtres optionnels)
   getAll: async (params = {}) => {
-    const response = await api.get('/api/medical-requests', { params });
+    const response = await api.get('/medical-requests', { params });
     return response.data;
   },
 
   // Récupérer une demande spécifique
   getById: async (id) => {
-    const response = await api.get(`/api/medical-requests/${id}`);
+    const response = await api.get(`/medical-requests/${id}`);
     return response.data;
   },
 
   // Créer une demande (HOSPITAL_AGENT seulement)
   create: async (requestData) => {
-    const response = await api.post('/api/medical-requests/', requestData);
+    const response = await api.post('/medical-requests/', requestData);
     return response.data;
   },
 
   // Valider une demande (ADMIN seulement)
   validate: async (requestId) => {
-    const response = await api.patch(`/api/medical-requests/${requestId}/validate`);
+    const response = await api.patch(`/medical-requests/${requestId}/validate`);
     return response.data;
   },
 
   // Rejeter une demande (ADMIN seulement)
   reject: async (requestId) => {
-    const response = await api.patch(`/api/medical-requests/${requestId}/reject`);
+    const response = await api.patch(`/medical-requests/${requestId}/reject`);
     return response.data;
   },
 };
@@ -116,13 +96,71 @@ export const medicalRequestsAPI = {
 export const donationsAPI = {
   // Créer une donation
   create: async (donationData) => {
-    const response = await api.post('/api/donations/', donationData);
+    const response = await api.post('/donations/', donationData);
     return response.data;
   },
 
   // Récupérer une donation
   getById: async (id) => {
-    const response = await api.get(`/api/donations/${id}`);
+    const response = await api.get(`/donations/${id}`);
+    return response.data;
+  },
+};
+
+// ========== PAYMENTS API ==========
+
+export const paymentsAPI = {
+  /**
+   * Créer une donation (étape 1)
+   */
+  createDonation: async (donationData) => {
+    const response = await api.post('/donations/', donationData);
+    return response.data;
+  },
+
+  /**
+   * Initier un paiement Wave (étape 2)
+   */
+  initiateWavePayment: async (paymentData) => {
+    const response = await api.post('/payments/wave/initiate', paymentData);
+    return response.data;
+  },
+
+  /**
+   * Vérifier le statut d'un paiement
+   */
+  getPaymentStatus: async (paymentId) => {
+    const response = await api.get(`/payments/${paymentId}`);
+    return response.data;
+  },
+
+  /**
+   * Obtenir toutes les donations d'un utilisateur
+   */
+  getMyDonations: async () => {
+    const response = await api.get('/donations/');
+    return response.data;
+  }
+};
+
+// ========== HÔPITAUX ==========
+
+export const hospitalsAPI = {
+  // Créer le profil hôpital de l'agent connecté
+  create: async (hospitalData) => {
+    const response = await api.post('/hospitals/', hospitalData);
+    return response.data;
+  },
+
+  // Récupérer l'hôpital de l'agent connecté
+  getMyHospital: async () => {
+    const response = await api.get('/hospitals/me');
+    return response.data;
+  },
+
+  // Récupérer un hôpital par ID
+  getById: async (id) => {
+    const response = await api.get(`/hospitals/${id}`);
     return response.data;
   },
 };
