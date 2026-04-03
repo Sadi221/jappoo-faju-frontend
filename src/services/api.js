@@ -105,6 +105,12 @@ export const donationsAPI = {
     const response = await api.get(`/donations/${id}`);
     return response.data;
   },
+
+  // Lister les dons reçus pour une demande médicale
+  getByRequest: async (requestId) => {
+    const response = await api.get(`/donations/by-request/${requestId}`);
+    return response.data;
+  },
 };
 
 // ========== PAYMENTS API ==========

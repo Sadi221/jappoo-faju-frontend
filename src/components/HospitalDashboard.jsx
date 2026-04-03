@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, LogOut, User, Plus, FileText, AlertTriangle, CheckCircle, X } from 'lucide-react';
-import { medicalRequestsAPI, authAPI, hospitalsAPI } from '../services/api';
+import { Heart, LogOut, User, Plus, FileText, AlertTriangle, CheckCircle, X, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import { medicalRequestsAPI, authAPI, hospitalsAPI, donationsAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 const HospitalDashboard = () => {
@@ -12,6 +12,8 @@ const HospitalDashboard = () => {
   const [hospitalLoading, setHospitalLoading] = useState(false);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [donationsByRequest, setDonationsByRequest] = useState({});
+  const [expandedRequest, setExpandedRequest] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
   const [createSuccess, setCreateSuccess] = useState(false);
@@ -49,13 +51,13 @@ const HospitalDashboard = () => {
     fetchUser();
   }, [navigate]);
 
-  // Charger TOUTES les demandes (PENDING, ACTIVE, etc.)
+  // Charger les demandes filtrées par hôpital de l'agent
   useEffect(() => {
     const fetchRequests = async () => {
+      if (!hospital) { setLoading(false); return; }
       try {
         setLoading(true);
-        // Récupère TOUTES les demandes sans filtre
-        const data = await medicalRequestsAPI.getAll();
+        const data = await medicalRequestsAPI.getAll({ status: 'ALL', hospital_id: hospital.id });
         setRequests(data);
       } catch (err) {
         console.error('Erreur lors du chargement des demandes:', err);
@@ -63,10 +65,26 @@ const HospitalDashboard = () => {
         setLoading(false);
       }
     };
-    if (user) {
-      fetchRequests();
+    if (user) fetchRequests();
+  }, [user, hospital]);
+
+  // Charger les dons d'une demande au clic
+  const toggleDonations = async (requestId) => {
+    if (expandedRequest === requestId) {
+      setExpandedRequest(null);
+      return;
     }
-  }, [user]);
+    setExpandedRequest(requestId);
+    if (!donationsByRequest[requestId]) {
+      try {
+        const data = await donationsAPI.getByRequest(requestId);
+        setDonationsByRequest(prev => ({ ...prev, [requestId]: data }));
+      } catch (err) {
+        console.error('Erreur chargement dons:', err);
+        setDonationsByRequest(prev => ({ ...prev, [requestId]: [] }));
+      }
+    }
+  };
 
   // Gérer la déconnexion
   const handleLogout = () => {
@@ -320,6 +338,46 @@ const HospitalDashboard = () => {
                       />
                       <span className="text-slate-600">{request.urgency_level}</span>
                     </div>
+
+                    {/* Bouton voir les dons */}
+                    <button
+                      onClick={() => toggleDonations(request.id)}
+                      className="w-full flex items-center justify-between px-4 py-2 bg-slate-50 hover:bg-blue-50 rounded-xl transition-all text-sm font-semibold text-slate-600 hover:text-blue-600"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Users size={16} />
+                        <span>Dons reçus</span>
+                      </div>
+                      {expandedRequest === request.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+
+                    {/* Liste des dons */}
+                    {expandedRequest === request.id && (
+                      <div className="border-t border-slate-100 pt-3 space-y-2">
+                        {!donationsByRequest[request.id] ? (
+                          <p className="text-sm text-slate-400 text-center py-2">Chargement...</p>
+                        ) : donationsByRequest[request.id].length === 0 ? (
+                          <p className="text-sm text-slate-400 text-center py-2">Aucun don reçu pour l'instant</p>
+                        ) : (
+                          donationsByRequest[request.id].map((don) => (
+                            <div key={don.id} className="flex items-center justify-between bg-green-50 rounded-lg px-3 py-2">
+                              <div>
+                                <p className="text-sm font-semibold text-slate-700">{don.donor_name}</p>
+                                <p className="text-xs text-slate-500">{new Date(don.created_at).toLocaleDateString('fr-FR')}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-bold text-green-600">{don.amount.toLocaleString()} FCFA</p>
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                  don.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                                  don.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-red-100 text-red-700'
+                                }`}>{don.status}</span>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
