@@ -92,8 +92,10 @@ export const medicalRequestsAPI = {
 
   // Prolonger la date limite (ADMIN seulement)
   extend: async (requestId, newExpiryDate) => {
+    // FastAPI n'accepte pas le format avec Z (UTC suffix) — on strip le Z
+    const dateStr = newExpiryDate.replace('Z', '');
     const response = await api.patch(`/medical-requests/${requestId}/extend`, {
-      new_expiry_date: newExpiryDate
+      new_expiry_date: dateStr
     });
     return response.data;
   },
