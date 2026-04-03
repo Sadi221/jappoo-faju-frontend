@@ -169,6 +169,18 @@ export const hospitalsAPI = {
     const response = await api.get(`/hospitals/${id}`);
     return response.data;
   },
+
+  // Lister tous les hôpitaux (ADMIN)
+  getAll: async () => {
+    const response = await api.get('/hospitals/');
+    return response.data;
+  },
+
+  // Vérifier un hôpital (ADMIN)
+  verify: async (id) => {
+    const response = await api.patch(`/hospitals/${id}/verify`);
+    return response.data;
+  },
 };
 
 // ========== STATISTIQUES (pour la landing page) ==========

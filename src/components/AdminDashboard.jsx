@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, LogOut, User, CheckCircle, XCircle, AlertTriangle, TrendingUp, Clock, Ban } from 'lucide-react';
-import { medicalRequestsAPI, authAPI } from '../services/api';
+import { Heart, LogOut, User, CheckCircle, XCircle, AlertTriangle, TrendingUp, Clock, Ban, Building2 } from 'lucide-react';
+import { medicalRequestsAPI, authAPI, hospitalsAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [allRequests, setAllRequests] = useState([]);
+  const [hospitals, setHospitals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
   const [showConfirm, setShowConfirm] = useState(null);
@@ -30,23 +31,38 @@ const AdminDashboard = () => {
     fetchUser();
   }, [navigate]);
 
-  // Charger toutes les demandes (admin voit tout)
+  // Charger toutes les demandes + hôpitaux
   useEffect(() => {
-    const fetchRequests = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const data = await medicalRequestsAPI.getAll({ status: 'ALL', limit: 100 });
-        setAllRequests(data);
+        const [requestsData, hospitalsData] = await Promise.all([
+          medicalRequestsAPI.getAll({ status: 'ALL', limit: 100 }),
+          hospitalsAPI.getAll(),
+        ]);
+        setAllRequests(requestsData);
+        setHospitals(hospitalsData);
       } catch (err) {
-        console.error('Erreur lors du chargement des demandes:', err);
+        console.error('Erreur lors du chargement:', err);
       } finally {
         setLoading(false);
       }
     };
-    if (user) {
-      fetchRequests();
-    }
+    if (user) fetchData();
   }, [user]);
+
+  const handleVerifyHospital = async (hospitalId) => {
+    setActionLoading(hospitalId);
+    try {
+      await hospitalsAPI.verify(hospitalId);
+      setHospitals(prev => prev.map(h => h.id === hospitalId ? { ...h, is_verified: true } : h));
+    } catch (err) {
+      console.error('Erreur vérification hôpital:', err);
+      alert('Erreur lors de la vérification');
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   // Statistiques
   const stats = {
@@ -182,6 +198,7 @@ const AdminDashboard = () => {
             { key: 'ACTIVE', label: 'Actives', count: stats.active, color: 'green' },
             { key: 'COMPLETED', label: 'Complétées', count: stats.completed, color: 'blue' },
             { key: 'REJECTED', label: 'Rejetées', count: stats.rejected, color: 'red' },
+            { key: 'HOSPITALS', label: 'Hôpitaux', count: hospitals.length, color: 'purple' },
           ].map(({ key, label, count, color }) => (
             <button
               key={key}
@@ -308,6 +325,55 @@ const AdminDashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Section hôpitaux */}
+      {activeTab === 'HOSPITALS' && (
+        <div className="max-w-7xl mx-auto px-6 pb-8">
+          <h2 className="text-2xl font-black text-slate-800 mb-6">
+            Hôpitaux enregistrés ({hospitals.length})
+          </h2>
+          {hospitals.length === 0 ? (
+            <div className="text-center py-16 bg-white rounded-2xl shadow-lg">
+              <Building2 className="mx-auto mb-4 text-slate-400" size={64} />
+              <p className="text-slate-600">Aucun hôpital enregistré</p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-6">
+              {hospitals.map((hospital) => (
+                <div key={hospital.id} className="bg-white rounded-2xl p-6 shadow-lg border-2 border-slate-100">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Building2 size={20} className="text-purple-600" />
+                        <h3 className="text-lg font-bold text-slate-800">{hospital.name}</h3>
+                      </div>
+                      <p className="text-sm text-slate-500">{hospital.address}</p>
+                      <p className="text-sm text-slate-500">{hospital.phone}</p>
+                      <p className="text-xs text-slate-400 mt-1">N° {hospital.registration_number}</p>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${
+                      hospital.is_verified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {hospital.is_verified ? '✓ Vérifié' : 'En attente'}
+                    </span>
+                  </div>
+
+                  {!hospital.is_verified && (
+                    <button
+                      onClick={() => handleVerifyHospital(hospital.id)}
+                      disabled={actionLoading === hospital.id}
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-green-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
+                    >
+                      <CheckCircle size={18} />
+                      {actionLoading === hospital.id ? 'Vérification...' : 'Vérifier cet hôpital'}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Modal de confirmation */}
       {showConfirm && (
