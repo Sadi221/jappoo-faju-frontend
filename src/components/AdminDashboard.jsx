@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, LogOut, User, CheckCircle, XCircle, AlertTriangle, TrendingUp, Clock, Ban, Building2 } from 'lucide-react';
+import { Heart, LogOut, User, CheckCircle, XCircle, AlertTriangle, TrendingUp, Clock, Ban, Building2, CalendarClock } from 'lucide-react';
 import { medicalRequestsAPI, authAPI, hospitalsAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,6 +11,8 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
   const [showConfirm, setShowConfirm] = useState(null);
+  const [showExtend, setShowExtend] = useState(null); // { id, patient_pseudonym }
+  const [extendDate, setExtendDate] = useState('');
   const [activeTab, setActiveTab] = useState('PENDING');
 
   // Charger l'utilisateur connecté
@@ -106,6 +108,23 @@ const AdminDashboard = () => {
     } catch (err) {
       console.error('Erreur lors de la validation:', err);
       alert('Erreur lors de la validation de la demande');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Prolonger la date limite
+  const handleExtend = async () => {
+    if (!extendDate || !showExtend) return;
+    setActionLoading(showExtend.id);
+    try {
+      const updated = await medicalRequestsAPI.extend(showExtend.id, new Date(extendDate).toISOString());
+      setAllRequests(prev => prev.map(r => r.id === showExtend.id ? { ...r, expiry_date: updated.expiry_date } : r));
+      setShowExtend(null);
+      setExtendDate('');
+    } catch (err) {
+      console.error('Erreur prolongation:', err);
+      alert(err.response?.data?.detail || 'Erreur lors de la prolongation');
     } finally {
       setActionLoading(null);
     }
@@ -309,6 +328,24 @@ const AdminDashboard = () => {
                         </div>
                       </div>
 
+                      {/* Date limite + bouton prolonger */}
+                      {(request.status === 'ACTIVE' || request.status === 'PENDING') && (
+                        <div className="flex items-center justify-between text-sm bg-slate-50 rounded-xl px-4 py-2">
+                          <span className="text-slate-500">
+                            {request.expiry_date
+                              ? `Expire le ${new Date(request.expiry_date).toLocaleDateString('fr-FR')}`
+                              : 'Pas de date limite'}
+                          </span>
+                          <button
+                            onClick={() => { setShowExtend({ id: request.id, patient_pseudonym: request.patient_pseudonym }); setExtendDate(''); }}
+                            className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-semibold"
+                          >
+                            <CalendarClock size={15} />
+                            Prolonger
+                          </button>
+                        </div>
+                      )}
+
                       {/* Actions — seulement pour les demandes PENDING */}
                       {request.status === 'PENDING' && (
                         <div className="flex gap-3 pt-4">
@@ -397,6 +434,45 @@ const AdminDashboard = () => {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Modal prolongation date */}
+      {showExtend && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-600 to-cyan-500 p-6 text-white">
+              <h2 className="text-xl font-bold">Prolonger la date limite</h2>
+              <p className="text-blue-100 text-sm mt-1">{showExtend.patient_pseudonym}</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Nouvelle date limite</label>
+                <input
+                  type="date"
+                  value={extendDate}
+                  onChange={e => setExtendDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setShowExtend(null); setExtendDate(''); }}
+                  className="flex-1 py-3 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition-all"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleExtend}
+                  disabled={!extendDate || !!actionLoading}
+                  className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
+                >
+                  {actionLoading ? 'Enregistrement...' : 'Confirmer'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

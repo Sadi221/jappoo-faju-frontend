@@ -89,6 +89,14 @@ export const medicalRequestsAPI = {
     const response = await api.patch(`/medical-requests/${requestId}/reject`);
     return response.data;
   },
+
+  // Prolonger la date limite (ADMIN seulement)
+  extend: async (requestId, newExpiryDate) => {
+    const response = await api.patch(`/medical-requests/${requestId}/extend`, {
+      new_expiry_date: newExpiryDate
+    });
+    return response.data;
+  },
 };
 
 // ========== DONATIONS ==========
