@@ -10,6 +10,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
   const [showConfirm, setShowConfirm] = useState(null);
+  const [activeTab, setActiveTab] = useState('PENDING');
 
   // Charger l'utilisateur connecté
   useEffect(() => {
@@ -29,12 +30,12 @@ const AdminDashboard = () => {
     fetchUser();
   }, [navigate]);
 
-  // Charger toutes les demandes
+  // Charger toutes les demandes (admin voit tout)
   useEffect(() => {
     const fetchRequests = async () => {
       try {
         setLoading(true);
-        const data = await medicalRequestsAPI.getAll();
+        const data = await medicalRequestsAPI.getAll({ status: 'ALL', limit: 100 });
         setAllRequests(data);
       } catch (err) {
         console.error('Erreur lors du chargement des demandes:', err);
@@ -56,6 +57,7 @@ const AdminDashboard = () => {
   };
 
   const pendingRequests = allRequests.filter(r => r.status === 'PENDING');
+  const filteredRequests = activeTab === 'ALL' ? allRequests : allRequests.filter(r => r.status === activeTab);
 
   // Gérer la déconnexion
   const handleLogout = () => {
@@ -173,10 +175,35 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Demandes en attente de validation */}
+        {/* Onglets */}
+        <div className="flex gap-2 mb-6 flex-wrap">
+          {[
+            { key: 'PENDING', label: 'En attente', count: stats.pending, color: 'yellow' },
+            { key: 'ACTIVE', label: 'Actives', count: stats.active, color: 'green' },
+            { key: 'COMPLETED', label: 'Complétées', count: stats.completed, color: 'blue' },
+            { key: 'REJECTED', label: 'Rejetées', count: stats.rejected, color: 'red' },
+          ].map(({ key, label, count, color }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 ${
+                activeTab === key
+                  ? `bg-${color}-600 text-white shadow-lg`
+                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+              }`}
+            >
+              {label}
+              <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                activeTab === key ? 'bg-white/20' : `bg-${color}-100 text-${color}-700`
+              }`}>{count}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Liste des demandes */}
         <div>
           <h2 className="text-2xl font-black text-slate-800 mb-6">
-            Demandes en attente de validation ({pendingRequests.length})
+            {activeTab === 'PENDING' ? `Demandes en attente de validation (${pendingRequests.length})` : `Demandes — ${activeTab} (${filteredRequests.length})`}
           </h2>
 
           {loading ? (
@@ -189,15 +216,14 @@ const AdminDashboard = () => {
                 </div>
               ))}
             </div>
-          ) : pendingRequests.length === 0 ? (
+          ) : filteredRequests.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-2xl shadow-lg">
               <CheckCircle className="mx-auto mb-4 text-green-400" size={64} />
-              <p className="text-slate-600 text-lg">Aucune demande en attente</p>
-              <p className="text-slate-400 text-sm">Toutes les demandes ont été traitées !</p>
+              <p className="text-slate-600 text-lg">Aucune demande ici</p>
             </div>
           ) : (
             <div className="grid md:grid-cols-2 gap-6">
-              {pendingRequests.map((request) => {
+              {filteredRequests.map((request) => {
                 const percentage = (request.amount_raised / request.amount_needed) * 100;
                 
                 return (
@@ -253,25 +279,27 @@ const AdminDashboard = () => {
                         </div>
                       </div>
 
-                      {/* Actions */}
-                      <div className="flex gap-3 pt-4">
-                        <button
-                          onClick={() => setShowConfirm({ id: request.id, action: 'reject' })}
-                          disabled={actionLoading === request.id}
-                          className="flex-1 flex items-center justify-center space-x-2 py-3 bg-red-100 text-red-700 font-semibold rounded-xl hover:bg-red-200 transition-all disabled:opacity-50"
-                        >
-                          <XCircle size={20} />
-                          <span>Rejeter</span>
-                        </button>
-                        <button
-                          onClick={() => setShowConfirm({ id: request.id, action: 'validate' })}
-                          disabled={actionLoading === request.id}
-                          className="flex-1 flex items-center justify-center space-x-2 py-3 bg-gradient-to-r from-green-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-green-500/30 transition-all disabled:opacity-50"
-                        >
-                          <CheckCircle size={20} />
-                          <span>Valider</span>
-                        </button>
-                      </div>
+                      {/* Actions — seulement pour les demandes PENDING */}
+                      {request.status === 'PENDING' && (
+                        <div className="flex gap-3 pt-4">
+                          <button
+                            onClick={() => setShowConfirm({ id: request.id, action: 'reject' })}
+                            disabled={actionLoading === request.id}
+                            className="flex-1 flex items-center justify-center space-x-2 py-3 bg-red-100 text-red-700 font-semibold rounded-xl hover:bg-red-200 transition-all disabled:opacity-50"
+                          >
+                            <XCircle size={20} />
+                            <span>Rejeter</span>
+                          </button>
+                          <button
+                            onClick={() => setShowConfirm({ id: request.id, action: 'validate' })}
+                            disabled={actionLoading === request.id}
+                            className="flex-1 flex items-center justify-center space-x-2 py-3 bg-gradient-to-r from-green-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-green-500/30 transition-all disabled:opacity-50"
+                          >
+                            <CheckCircle size={20} />
+                            <span>Valider</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
