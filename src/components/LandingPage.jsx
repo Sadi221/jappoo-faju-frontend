@@ -402,9 +402,9 @@ const LandingPage = () => {
                 Ces patients ont besoin de votre aide aujourd'hui
               </p>
             </div>
-            <button className="px-6 py-3 bg-white border-2 border-blue-200 text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-all">
+            <a href="#urgences" className="px-6 py-3 bg-white border-2 border-blue-200 text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-all">
               Voir tous les cas →
-            </button>
+            </a>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
