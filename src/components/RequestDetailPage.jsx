@@ -3,9 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Heart, ArrowLeft, AlertTriangle, Calendar, Building2, Share2, CheckCircle } from 'lucide-react';
 import { medicalRequestsAPI } from '../services/api';
 import DonationModal from './DonationModal';
-
-const URGENCY_LABELS = { CRITICAL: 'Critique', HIGH: 'Élevé', MEDIUM: 'Moyen', LOW: 'Faible' };
-const NEED_LABELS = { SURGERY: 'Chirurgie', MEDICATION: 'Médicaments', EXAM: 'Examens médicaux', KIT: 'Kit médical' };
+import { MEDICAL_NEED_LABELS, URGENCY_LABELS, REQUEST_STATUS_LABELS, t } from '../utils/translations';
 
 const RequestDetailPage = () => {
   const { id } = useParams();
@@ -103,11 +101,11 @@ const RequestDetailPage = () => {
                 request.urgency_level === 'HIGH' ? 'bg-orange-100 text-orange-700' :
                 request.urgency_level === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'
               }`}>
-                Urgence {URGENCY_LABELS[request.urgency_level] || request.urgency_level}
+                Urgence {t(URGENCY_LABELS, request.urgency_level)}
               </span>
             </div>
             <h1 className="text-3xl font-black text-slate-800">
-              {NEED_LABELS[request.medical_need] || request.medical_need}
+              {t(MEDICAL_NEED_LABELS, request.medical_need)}
             </h1>
             <p className="text-slate-500 mt-1">Patient : {request.patient_pseudonym}</p>
           </div>
@@ -135,11 +133,11 @@ const RequestDetailPage = () => {
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-blue-100 grid grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-slate-500 mb-1">Type de besoin</p>
-                <p className="font-semibold text-slate-800">{NEED_LABELS[request.medical_need] || request.medical_need}</p>
+                <p className="font-semibold text-slate-800">{t(MEDICAL_NEED_LABELS, request.medical_need)}</p>
               </div>
               <div>
                 <p className="text-xs text-slate-500 mb-1">Niveau d'urgence</p>
-                <p className="font-semibold text-slate-800">{URGENCY_LABELS[request.urgency_level] || request.urgency_level}</p>
+                <p className="font-semibold text-slate-800">{t(URGENCY_LABELS, request.urgency_level)}</p>
               </div>
               <div>
                 <p className="text-xs text-slate-500 mb-1">Date de création</p>

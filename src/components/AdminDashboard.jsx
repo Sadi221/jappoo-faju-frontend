@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, LogOut, User, CheckCircle, XCircle, AlertTriangle, TrendingUp, Clock, Ban, Building2, CalendarClock } from 'lucide-react';
 import { medicalRequestsAPI, authAPI, hospitalsAPI } from '../services/api';
+import { MEDICAL_NEED_LABELS, URGENCY_LABELS, t } from '../utils/translations';
 import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
@@ -283,7 +284,7 @@ const AdminDashboard = () => {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-2">
-                            <h3 className="text-xl font-bold text-slate-800">{request.medical_need}</h3>
+                            <h3 className="text-xl font-bold text-slate-800">{t(MEDICAL_NEED_LABELS, request.medical_need)}</h3>
                             <AlertTriangle
                               size={20}
                               className={
@@ -316,7 +317,7 @@ const AdminDashboard = () => {
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <p className="text-slate-500">Urgence</p>
-                          <p className="font-semibold text-slate-700">{request.urgency_level}</p>
+                          <p className="font-semibold text-slate-700">{t(URGENCY_LABELS, request.urgency_level)}</p>
                         </div>
                         <div>
                           <p className="text-slate-500">Créée le</p>

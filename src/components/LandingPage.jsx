@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Heart, Shield, Users, ChevronRight, ArrowRight, CheckCircle, Clock, TrendingUp } from 'lucide-react';
 import { medicalRequestsAPI } from '../services/api';
 import DonationModal from '../components/DonationModal';
+import { MEDICAL_NEED_LABELS, URGENCY_LABELS, t } from '../utils/translations';
 
 // Composant Logo JAPPOO FAJU
 const JappooFajuLogo = ({ size = 48 }) => (
@@ -444,13 +445,13 @@ const LandingPage = () => {
                   <div className="p-6 space-y-4">
                     <div className="flex items-center justify-between">
                       <span className={`px-3 py-1 ${case_.urgency_level === 'CRITICAL' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'} rounded-full text-xs font-bold`}>
-                        {case_.urgency_level} • {case_.daysLeft ? `${case_.daysLeft}J restants` : 'En cours'}
+                        {t(URGENCY_LABELS, case_.urgency_level)} • {case_.daysLeft ? `${case_.daysLeft}J restants` : 'En cours'}
                       </span>
                       <Heart className="text-slate-300 group-hover:text-red-500 group-hover:scale-110 transition-all cursor-pointer" size={20} />
                     </div>
 
                     <div>
-                      <h3 className="text-xl font-bold text-slate-800 mb-1">{case_.medical_need}</h3>
+                      <h3 className="text-xl font-bold text-slate-800 mb-1">{t(MEDICAL_NEED_LABELS, case_.medical_need)}</h3>
                       <p className="text-sm text-slate-500">{case_.patient_pseudonym}</p>
                       <p className="text-xs text-slate-400 mt-1">{case_.hospital_id}</p>
                     </div>

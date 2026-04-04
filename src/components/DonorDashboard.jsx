@@ -3,6 +3,7 @@ import { Heart, Search, LogOut, User, AlertCircle, History, List, ExternalLink }
 import { medicalRequestsAPI, paymentsAPI, authAPI } from '../services/api';
 import { useNavigate, Link } from 'react-router-dom';
 import DonationModal from './DonationModal';
+import { MEDICAL_NEED_LABELS, URGENCY_LABELS, DONATION_STATUS_LABELS, t } from '../utils/translations';
 
 const URGENCY_COLORS = {
   CRITICAL: { bar: 'bg-red-500', badge: 'bg-red-100 text-red-700' },
@@ -11,10 +12,10 @@ const URGENCY_COLORS = {
   LOW:      { bar: 'bg-blue-400', badge: 'bg-blue-100 text-blue-700' },
 };
 
-const DONATION_STATUS = {
-  COMPLETED: { label: 'Confirmé', cls: 'bg-green-100 text-green-700' },
-  PENDING:   { label: 'En attente', cls: 'bg-yellow-100 text-yellow-700' },
-  CANCELLED: { label: 'Annulé', cls: 'bg-red-100 text-red-700' },
+const DONATION_STATUS_CLS = {
+  COMPLETED: 'bg-green-100 text-green-700',
+  PENDING:   'bg-yellow-100 text-yellow-700',
+  CANCELLED: 'bg-red-100 text-red-700',
 };
 
 const DonorDashboard = () => {
@@ -232,12 +233,12 @@ const DonorDashboard = () => {
                       <div className="p-6 space-y-4">
                         <div className="flex items-center justify-between">
                           <span className={`px-3 py-1 rounded-full text-xs font-bold ${colors.badge}`}>
-                            {request.urgency_level}{daysLeft !== null ? ` • ${daysLeft}J` : ''}
+                            {t(URGENCY_LABELS, request.urgency_level)}{daysLeft !== null ? ` • ${daysLeft}J` : ''}
                           </span>
                           <Heart className="text-slate-300 group-hover:text-red-500 transition-all" size={20} />
                         </div>
                         <div>
-                          <h3 className="text-xl font-bold text-slate-800 mb-1">{request.medical_need}</h3>
+                          <h3 className="text-xl font-bold text-slate-800 mb-1">{t(MEDICAL_NEED_LABELS, request.medical_need)}</h3>
                           <p className="text-sm text-slate-500">{request.patient_pseudonym}</p>
                           <p className="text-xs text-slate-400 mt-2 line-clamp-2">{request.description}</p>
                         </div>
@@ -326,13 +327,13 @@ const DonorDashboard = () => {
             ) : (
               <div className="space-y-4">
                 {myDonations.map((donation, i) => {
-                  const statusInfo = DONATION_STATUS[donation.status] || DONATION_STATUS.PENDING;
+                  const statusCls = DONATION_STATUS_CLS[donation.status] || DONATION_STATUS_CLS.PENDING;
                   return (
                     <div key={donation.id || i} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-center justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-1">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${statusInfo.cls}`}>
-                            {statusInfo.label}
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${statusCls}`}>
+                            {t(DONATION_STATUS_LABELS, donation.status)}
                           </span>
                           <span className="text-xs text-slate-400">
                             {new Date(donation.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -342,7 +343,7 @@ const DonorDashboard = () => {
                           {donation.medical_request?.patient_pseudonym || donation.medical_request_id}
                         </p>
                         {donation.medical_request?.medical_need && (
-                          <p className="text-sm text-slate-500">{donation.medical_request.medical_need}</p>
+                          <p className="text-sm text-slate-500">{t(MEDICAL_NEED_LABELS, donation.medical_request.medical_need)}</p>
                         )}
                       </div>
                       <div className="text-right flex items-center gap-3">

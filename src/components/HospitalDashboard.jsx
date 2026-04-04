@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, LogOut, User, Plus, FileText, AlertTriangle, CheckCircle, X, ChevronDown, ChevronUp, Users, Upload, Paperclip } from 'lucide-react';
 import { medicalRequestsAPI, authAPI, hospitalsAPI, donationsAPI } from '../services/api';
+import { MEDICAL_NEED_LABELS, URGENCY_LABELS, REQUEST_STATUS_LABELS, DONATION_STATUS_LABELS, t } from '../utils/translations';
 import { useNavigate } from 'react-router-dom';
 
 const HospitalDashboard = () => {
@@ -186,16 +187,16 @@ const HospitalDashboard = () => {
 
   const getStatusBadge = (status) => {
     const badges = {
-      PENDING: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'En attente' },
-      ACTIVE: { bg: 'bg-green-100', text: 'text-green-700', label: 'Active' },
-      COMPLETED: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Complétée' },
-      REJECTED: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rejetée' },
-      EXPIRED: { bg: 'bg-slate-100', text: 'text-slate-500', label: 'Expirée' },
+      PENDING:   { bg: 'bg-yellow-100', text: 'text-yellow-700' },
+      ACTIVE:    { bg: 'bg-green-100',  text: 'text-green-700' },
+      COMPLETED: { bg: 'bg-blue-100',   text: 'text-blue-700' },
+      REJECTED:  { bg: 'bg-red-100',    text: 'text-red-700' },
+      EXPIRED:   { bg: 'bg-slate-100',  text: 'text-slate-500' },
     };
     const badge = badges[status] || badges.PENDING;
     return (
       <span className={`px-3 py-1 rounded-full text-xs font-bold ${badge.bg} ${badge.text}`}>
-        {badge.label}
+        {t(REQUEST_STATUS_LABELS, status)}
       </span>
     );
   };
@@ -318,7 +319,7 @@ const HospitalDashboard = () => {
                     {/* Header */}
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="text-xl font-bold text-slate-800 mb-1">{request.medical_need}</h3>
+                        <h3 className="text-xl font-bold text-slate-800 mb-1">{t(MEDICAL_NEED_LABELS, request.medical_need)}</h3>
                         <p className="text-sm text-slate-500">{request.patient_pseudonym}</p>
                       </div>
                       {getStatusBadge(request.status)}
@@ -359,7 +360,7 @@ const HospitalDashboard = () => {
                           'text-blue-600'
                         }
                       />
-                      <span className="text-slate-600">{request.urgency_level}</span>
+                      <span className="text-slate-600">{t(URGENCY_LABELS, request.urgency_level)}</span>
                     </div>
 
                     {/* Document de preuve */}
@@ -431,7 +432,7 @@ const HospitalDashboard = () => {
                                   don.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
                                   don.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
                                   'bg-red-100 text-red-700'
-                                }`}>{don.status}</span>
+                                }`}>{t(DONATION_STATUS_LABELS, don.status)}</span>
                               </div>
                             </div>
                           ))
