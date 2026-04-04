@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { X, Heart, Phone, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { paymentsAPI } from '../services/api';
 
-const DonationModal = ({ isOpen, onClose, medicalRequest }) => {
+const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
+  medicalRequest = medicalRequest || request;
   const [amount, setAmount] = useState('');
   const [customAmount, setCustomAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('WAVE');
@@ -16,7 +17,7 @@ const DonationModal = ({ isOpen, onClose, medicalRequest }) => {
   // Montants suggérés
   const suggestedAmounts = [10000, 25000, 50000, 100000, 250000, 500000];
 
-  if (!isOpen || !medicalRequest) return null;
+  if (isOpen === false || !medicalRequest) return null;
 
   const handleAmountSelect = (value) => {
     setAmount(value);
