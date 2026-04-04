@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Heart, Shield, Users, ChevronRight, ArrowRight, CheckCircle, Clock, TrendingUp } from 'lucide-react';
 import { medicalRequestsAPI } from '../services/api';
 import DonationModal from '../components/DonationModal';
@@ -472,14 +472,21 @@ const LandingPage = () => {
                       </div>
                     </div>
 
-                    {/* ✅ FIX 2b — Bouton désactivé si pas d'UUID valide (fallback) */}
-                    <button
-                      onClick={() => handleDonateClick(case_)}
-                      disabled={!case_.id}
-                      className="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all transform group-hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Contribuer
-                    </button>
+                    <div className="flex gap-2">
+                      <Link
+                        to={`/cas/${case_.id}`}
+                        className="flex-1 py-3 text-center border-2 border-blue-200 text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-all text-sm"
+                      >
+                        Voir le détail
+                      </Link>
+                      <button
+                        onClick={() => handleDonateClick(case_)}
+                        disabled={!case_.id}
+                        className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all transform group-hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                      >
+                        Contribuer
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))

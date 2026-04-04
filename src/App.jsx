@@ -3,7 +3,8 @@ import LandingPage from './components/LandingPage';
 import AuthPage from './components/AuthPage';
 import DonorDashboard from './components/DonorDashboard';
 import HospitalDashboard from './components/HospitalDashboard';
-import AdminDashboard from './components/AdminDashboard';  // ← AJOUTÉ
+import AdminDashboard from './components/AdminDashboard';
+import RequestDetailPage from './components/RequestDetailPage';
 
 
 
@@ -18,7 +19,8 @@ function App() {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/dashboard-donateur" element={<DonorDashboard />} />
         <Route path="/dashboard-hopital" element={<HospitalDashboard />} />
-        <Route path="/dashboard-admin" element={<AdminDashboard />} />  {/* ← AJOUTÉ */}
+        <Route path="/dashboard-admin" element={<AdminDashboard />} />
+        <Route path="/cas/:id" element={<RequestDetailPage />} />
       </Routes>
     </Router>
   );
