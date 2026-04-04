@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, LogOut, User, Plus, FileText, AlertTriangle, CheckCircle, X, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import { Heart, LogOut, User, Plus, FileText, AlertTriangle, CheckCircle, X, ChevronDown, ChevronUp, Users, Upload, Paperclip } from 'lucide-react';
 import { medicalRequestsAPI, authAPI, hospitalsAPI, donationsAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
@@ -18,6 +18,8 @@ const HospitalDashboard = () => {
   const [createLoading, setCreateLoading] = useState(false);
   const [createSuccess, setCreateSuccess] = useState(false);
   const [createError, setCreateError] = useState('');
+  const [uploadingId, setUploadingId] = useState(null);
+  const [uploadError, setUploadError] = useState('');
 
   // État du formulaire
   const [formData, setFormData] = useState({
@@ -166,12 +168,29 @@ const HospitalDashboard = () => {
     }
   };
 
+  const handleUploadProof = async (requestId, file) => {
+    if (!file) return;
+    setUploadingId(requestId);
+    setUploadError('');
+    try {
+      await medicalRequestsAPI.uploadProof(requestId, file);
+      // Rafraîchir la liste pour afficher le nouveau document
+      const data = await medicalRequestsAPI.getAll({ status: 'ALL', hospital_id: hospital.id });
+      setRequests(data);
+    } catch (err) {
+      setUploadError(err.response?.data?.detail || 'Erreur lors de l\'upload');
+    } finally {
+      setUploadingId(null);
+    }
+  };
+
   const getStatusBadge = (status) => {
     const badges = {
       PENDING: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'En attente' },
       ACTIVE: { bg: 'bg-green-100', text: 'text-green-700', label: 'Active' },
       COMPLETED: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Complétée' },
       REJECTED: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rejetée' },
+      EXPIRED: { bg: 'bg-slate-100', text: 'text-slate-500', label: 'Expirée' },
     };
     const badge = badges[status] || badges.PENDING;
     return (
@@ -342,6 +361,43 @@ const HospitalDashboard = () => {
                       />
                       <span className="text-slate-600">{request.urgency_level}</span>
                     </div>
+
+                    {/* Document de preuve */}
+                    <div className="flex items-center justify-between">
+                      {request.proof_document_url ? (
+                        <a
+                          href={`${import.meta.env.VITE_API_BASE_URL || 'https://jappoo-faju-backend-production-b1f1.up.railway.app'}${request.proof_document_url}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                        >
+                          <Paperclip size={14} />
+                          <span>Document joint</span>
+                        </a>
+                      ) : (
+                        <span className="text-xs text-slate-400">Aucun document</span>
+                      )}
+                      {['PENDING', 'ACTIVE'].includes(request.status) && (
+                        <label className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+                          uploadingId === request.id
+                            ? 'bg-slate-100 text-slate-400 cursor-wait'
+                            : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                        }`}>
+                          <Upload size={13} />
+                          <span>{uploadingId === request.id ? 'Upload...' : 'Joindre document'}</span>
+                          <input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png,.webp"
+                            className="hidden"
+                            disabled={uploadingId === request.id}
+                            onChange={e => handleUploadProof(request.id, e.target.files[0])}
+                          />
+                        </label>
+                      )}
+                    </div>
+                    {uploadError && uploadingId === null && (
+                      <p className="text-xs text-red-500">{uploadError}</p>
+                    )}
 
                     {/* Bouton voir les dons */}
                     <button

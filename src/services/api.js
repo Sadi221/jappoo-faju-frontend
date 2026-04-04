@@ -90,6 +90,16 @@ export const medicalRequestsAPI = {
     return response.data;
   },
 
+  // Uploader un document de preuve
+  uploadProof: async (requestId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post(`/medical-requests/${requestId}/upload-proof`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+
   // Prolonger la date limite (ADMIN seulement)
   extend: async (requestId, newExpiryDate) => {
     // FastAPI n'accepte pas le format avec Z (UTC suffix) — on strip le Z
