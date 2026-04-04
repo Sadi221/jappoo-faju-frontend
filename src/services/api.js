@@ -62,7 +62,7 @@ export const authAPI = {
 export const medicalRequestsAPI = {
   // Récupérer toutes les demandes (avec filtres optionnels)
   getAll: async (params = {}) => {
-    const response = await api.get('/medical-requests', { params });
+    const response = await api.get('/medical-requests/', { params });
     return response.data;
   },
 
