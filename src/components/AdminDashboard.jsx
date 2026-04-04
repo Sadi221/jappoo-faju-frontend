@@ -101,8 +101,7 @@ const AdminDashboard = () => {
     setActionLoading(requestId);
     try {
       await medicalRequestsAPI.validate(requestId);
-      // Recharger les demandes
-      const data = await medicalRequestsAPI.getAll();
+      const data = await medicalRequestsAPI.getAll({ status: 'ALL', limit: 100 });
       setAllRequests(data);
       setShowConfirm(null);
     } catch (err) {
@@ -135,8 +134,7 @@ const AdminDashboard = () => {
     setActionLoading(requestId);
     try {
       await medicalRequestsAPI.reject(requestId);
-      // Recharger les demandes
-      const data = await medicalRequestsAPI.getAll();
+      const data = await medicalRequestsAPI.getAll({ status: 'ALL', limit: 100 });
       setAllRequests(data);
       setShowConfirm(null);
     } catch (err) {
