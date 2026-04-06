@@ -5,8 +5,7 @@ import DonorDashboard from './components/DonorDashboard';
 import HospitalDashboard from './components/HospitalDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import RequestDetailPage from './components/RequestDetailPage';
-
-
+import PrivacyPolicyPage from './components/PrivacyPolicyPage';
 
 function App() {
   console.log('🔍 VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
@@ -21,6 +20,7 @@ function App() {
         <Route path="/dashboard-hopital" element={<HospitalDashboard />} />
         <Route path="/dashboard-admin" element={<AdminDashboard />} />
         <Route path="/cas/:id" element={<RequestDetailPage />} />
+        <Route path="/politique-de-confidentialite" element={<PrivacyPolicyPage />} />
       </Routes>
     </Router>
   );

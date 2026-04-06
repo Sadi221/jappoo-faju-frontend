@@ -238,64 +238,69 @@ const LandingPage = () => {
             <div className="relative">
               <div className="absolute -inset-4 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-3xl blur-2xl opacity-20 animate-pulse"></div>
 
-              <div className="relative bg-white rounded-3xl shadow-2xl p-8 space-y-6 border border-blue-100">
-                <div className="flex items-center justify-between">
-                  <span className="px-4 py-2 bg-red-100 text-red-700 rounded-full text-sm font-bold flex items-center space-x-2">
-                    <Clock size={16} />
-                    <span>CRITIQUE - 3 jours restants</span>
-                  </span>
-                  <Heart className="text-red-500 hover:scale-110 transition-transform cursor-pointer" size={24} />
+              {loading ? (
+                <div className="relative bg-white rounded-3xl shadow-2xl p-8 flex items-center justify-center h-64 border border-blue-100">
+                  <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                 </div>
-
-                <div>
-                  <h3 className="text-2xl font-bold text-slate-800 mb-2">Dialyse rénale urgente</h3>
-                  <p className="text-slate-600">Patient DK-2026-045</p>
-                  <p className="text-sm text-slate-500 mt-1">Hôpital Principal de Dakar</p>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-600">320,000 FCFA collectés</span>
-                    <span className="font-bold text-blue-600">38%</span>
-                  </div>
-                  <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-blue-600 to-cyan-500 rounded-full transition-all duration-1000"
-                         style={{ width: '38%' }}></div>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Objectif: 850,000 FCFA</span>
-                    <span className="text-slate-500">530,000 FCFA restants</span>
-                  </div>
-                </div>
-
-                {/* ✅ FIX 3 — Bouton hero card avec className et disabled si pas d'ID */}
-                <button
-                  onClick={() => {
-                    if (urgentCases?.length > 0 && urgentCases[0].id) {
-                      handleDonateClick(urgentCases[0]);
-                    } else {
-                      alert('Aucune demande médicale disponible pour le moment.');
-                    }
-                  }}
-                  disabled={!urgentCases?.length || !urgentCases[0]?.id}
-                  className="w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl hover:shadow-xl hover:shadow-blue-500/30 transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Heart size={20} fill="white" />
-                  <span>Contribuer maintenant</span>
-                </button>
-
-                <div className="pt-4 border-t border-slate-200 flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <div className="flex -space-x-2">
-                      {[1,2,3,4].map(i => (
-                        <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 border-2 border-white"></div>
-                      ))}
+              ) : urgentCases.length > 0 ? (() => {
+                const featured = urgentCases[0];
+                const pct = Math.min((featured.amount_raised / featured.amount_needed) * 100, 100);
+                const urgencyColor = featured.urgency_level === 'CRITICAL' ? 'bg-red-100 text-red-700' :
+                  featured.urgency_level === 'HIGH' ? 'bg-orange-100 text-orange-700' : 'bg-yellow-100 text-yellow-700';
+                return (
+                  <div className="relative bg-white rounded-3xl shadow-2xl p-8 space-y-6 border border-blue-100">
+                    <div className="flex items-center justify-between">
+                      <span className={`px-4 py-2 ${urgencyColor} rounded-full text-sm font-bold flex items-center space-x-2`}>
+                        <Clock size={16} />
+                        <span>{t(URGENCY_LABELS, featured.urgency_level)}{featured.daysLeft ? ` - ${featured.daysLeft} jour${featured.daysLeft > 1 ? 's' : ''} restant${featured.daysLeft > 1 ? 's' : ''}` : ''}</span>
+                      </span>
+                      <Heart className="text-red-500 hover:scale-110 transition-transform cursor-pointer" size={24} />
                     </div>
-                    <span className="text-slate-600 font-semibold">+127 donateurs</span>
+                    <div>
+                      <h3 className="text-2xl font-bold text-slate-800 mb-2">{t(MEDICAL_NEED_LABELS, featured.medical_need)}</h3>
+                      <p className="text-slate-600">{featured.patient_pseudonym}</p>
+                      <p className="text-sm text-slate-500 mt-1">{featured.hospital_id}</p>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600">{Number(featured.amount_raised).toLocaleString()} FCFA collectés</span>
+                        <span className="font-bold text-blue-600">{Math.round(pct)}%</span>
+                      </div>
+                      <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-blue-600 to-cyan-500 rounded-full transition-all duration-1000"
+                             style={{ width: `${pct}%` }}></div>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">Objectif : {Number(featured.amount_needed).toLocaleString()} FCFA</span>
+                        <span className="text-slate-500">{Number(featured.amount_needed - featured.amount_raised).toLocaleString()} restants</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => featured.id && handleDonateClick(featured)}
+                      disabled={!featured.id}
+                      className="w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl hover:shadow-xl hover:shadow-blue-500/30 transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Heart size={20} fill="white" />
+                      <span>Contribuer maintenant</span>
+                    </button>
+                    <div className="pt-4 border-t border-slate-200 flex items-center justify-between text-sm">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex -space-x-2">
+                          {[1,2,3,4].map(i => (
+                            <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 border-2 border-white"></div>
+                          ))}
+                        </div>
+                        <span className="text-slate-600 font-semibold">Donateurs actifs</span>
+                      </div>
+                      <span className="text-blue-600 font-semibold">Vérifié ✓</span>
+                    </div>
                   </div>
-                  <span className="text-blue-600 font-semibold">Vérifié ✓</span>
+                );
+              })() : (
+                <div className="relative bg-white rounded-3xl shadow-2xl p-8 flex items-center justify-center h-64 border border-blue-100">
+                  <p className="text-slate-500 text-center">Aucune demande urgente pour le moment.</p>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -496,6 +501,48 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* Notre Impact */}
+      <section id="impact" className="py-20 px-6 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl lg:text-5xl font-black text-slate-800 mb-6">Notre impact</h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+              Chaque franc collecté est tracé, chaque patient aidé est documenté
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              { icon: Heart, value: "100%", label: "des fonds reversés aux bénéficiaires", color: "text-red-500", bg: "bg-red-50" },
+              { icon: Shield, value: "0 FCFA", label: "de frais de gestion sur vos dons", color: "text-blue-600", bg: "bg-blue-50" },
+              { icon: Users, value: "48h", label: "délai moyen de validation des demandes", color: "text-green-600", bg: "bg-green-50" },
+            ].map((item, i) => (
+              <div key={i} className={`${item.bg} rounded-3xl p-10 text-center border border-slate-100 hover:shadow-xl transition-all`}>
+                <div className="flex justify-center mb-4">
+                  <item.icon className={item.color} size={40} />
+                </div>
+                <div className={`text-5xl font-black ${item.color} mb-3`}>{item.value}</div>
+                <p className="text-slate-600 text-lg">{item.label}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-16 bg-gradient-to-br from-slate-50 to-blue-50 rounded-3xl p-10 border border-blue-100 text-center">
+            <p className="text-slate-700 text-lg leading-relaxed max-w-3xl mx-auto">
+              <span className="font-bold text-blue-700">JAPPOO FAJU</span> est une initiative de l'association{' '}
+              <span className="font-bold">Développement Solidaire et Santé (DSS)</span>, organisation française
+              engagée depuis 2010 pour améliorer l'accès aux soins en Afrique de l'Ouest.
+            </p>
+            <a
+              href="https://www.dss-france.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mt-4 text-blue-600 font-semibold hover:underline"
+            >
+              www.dss-france.org →
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Final */}
       <section className="py-32 px-6 bg-gradient-to-br from-blue-600 via-purple-600 to-cyan-600 relative overflow-hidden">
         <div className="absolute inset-0 opacity-20">
@@ -516,16 +563,16 @@ const LandingPage = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
-            <button className="px-10 py-5 bg-white text-blue-600 font-bold text-lg rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105">
+            <button onClick={() => navigate('/auth')} className="px-10 py-5 bg-white text-blue-600 font-bold text-lg rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105">
               Devenir donateur
             </button>
-            <button className="px-10 py-5 bg-transparent border-2 border-white text-white font-bold text-lg rounded-2xl hover:bg-white/10 transition-all">
+            <button onClick={() => navigate('/auth')} className="px-10 py-5 bg-transparent border-2 border-white text-white font-bold text-lg rounded-2xl hover:bg-white/10 transition-all">
               Je suis un hôpital
             </button>
           </div>
 
           <p className="mt-8 text-blue-100 text-sm">
-            Déjà membre ? <a href="#" className="underline font-semibold hover:text-white">Connectez-vous</a>
+            Déjà membre ? <button onClick={() => navigate('/auth')} className="underline font-semibold hover:text-white">Connectez-vous</button>
           </p>
         </div>
       </section>
@@ -541,43 +588,47 @@ const LandingPage = () => {
                 </div>
                 <span className="text-xl font-black">JAPPOO FAJU</span>
               </div>
-              <p className="text-slate-400 text-sm">
+              <p className="text-slate-400 text-sm leading-relaxed">
                 La plateforme de solidarité médicale qui sauve des vies au Sénégal.
+              </p>
+              <p className="text-slate-500 text-xs mt-3 leading-relaxed">
+                Une initiative de l'association{' '}
+                <a href="https://www.dss-france.org" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
+                  Développement Solidaire et Santé – DSS
+                </a>
               </p>
             </div>
 
             <div>
               <h4 className="font-bold mb-4">Plateforme</h4>
               <ul className="space-y-2 text-sm text-slate-400">
-                <li><a href="#" className="hover:text-white transition-colors">Comment ça marche</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Faire un don</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Cas urgents</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Devenir partenaire</a></li>
+                <li><a href="#comment" className="hover:text-white transition-colors">Comment ça marche</a></li>
+                <li><button onClick={() => navigate('/auth')} className="hover:text-white transition-colors text-left">Faire un don</button></li>
+                <li><a href="#urgences" className="hover:text-white transition-colors">Cas urgents</a></li>
+                <li><a href="#impact" className="hover:text-white transition-colors">Notre impact</a></li>
               </ul>
             </div>
 
             <div>
               <h4 className="font-bold mb-4">Légal</h4>
               <ul className="space-y-2 text-sm text-slate-400">
-                <li><a href="#" className="hover:text-white transition-colors">Mentions légales</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Politique de confidentialité</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">CGU</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Transparence</a></li>
+                <li><Link to="/politique-de-confidentialite" className="hover:text-white transition-colors">Politique de confidentialité</Link></li>
+                <li><a href="https://www.dss-france.org" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">À propos de DSS</a></li>
               </ul>
             </div>
 
             <div>
               <h4 className="font-bold mb-4">Contact</h4>
               <ul className="space-y-2 text-sm text-slate-400">
-                <li>contact@jappoofaju.sn</li>
-                <li>+221 33 XXX XX XX</li>
+                <li><a href="mailto:contact@jappoofaju.org" className="hover:text-white transition-colors">contact@jappoofaju.org</a></li>
+                <li><a href="tel:+221783767008" className="hover:text-white transition-colors">+221 78 376 70 08</a></li>
                 <li>Dakar, Sénégal</li>
               </ul>
             </div>
           </div>
 
-          <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center text-sm text-slate-400">
-            <p>© 2026 JAPPOO FAJU. Tous droits réservés.</p>
+          <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center text-sm text-slate-400 gap-2">
+            <p>© 2026 JAPPOO FAJU — Une initiative de <a href="https://www.dss-france.org" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">DSS France</a>. Tous droits réservés.</p>
             <p>Fait avec ❤️ pour le Sénégal</p>
           </div>
         </div>
