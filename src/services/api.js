@@ -153,6 +153,22 @@ export const paymentsAPI = {
   },
 
   /**
+   * Initier un paiement Orange Money (étape 2)
+   */
+  initiateOrangeMoneyPayment: async (paymentData) => {
+    const response = await api.post('/payments/orange-money/initiate', paymentData);
+    return response.data;
+  },
+
+  /**
+   * Créer une session Stripe Checkout (paiement par carte)
+   */
+  createStripeCheckout: async (paymentData) => {
+    const response = await api.post('/payments/stripe/create-checkout', paymentData);
+    return response.data;
+  },
+
+  /**
    * Vérifier le statut d'un paiement
    */
   getPaymentStatus: async (paymentId) => {
