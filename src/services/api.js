@@ -145,18 +145,10 @@ export const paymentsAPI = {
   },
 
   /**
-   * Initier un paiement Wave (étape 2)
+   * Initier un paiement PayDunya (Wave ou Orange Money — choix sur la page PayDunya)
    */
-  initiateWavePayment: async (paymentData) => {
-    const response = await api.post('/payments/wave/initiate', paymentData);
-    return response.data;
-  },
-
-  /**
-   * Initier un paiement Orange Money (étape 2)
-   */
-  initiateOrangeMoneyPayment: async (paymentData) => {
-    const response = await api.post('/payments/orange-money/initiate', paymentData);
+  initiatePayDunyaPayment: async (paymentData) => {
+    const response = await api.post('/payments/paydunya/initiate', paymentData);
     return response.data;
   },
 

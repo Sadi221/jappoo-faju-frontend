@@ -1,26 +1,39 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, Heart, Phone, CreditCard, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { paymentsAPI } from '../services/api';
 import { MEDICAL_NEED_LABELS, t } from '../utils/translations';
 
+// PayDunya couvre Wave + Orange Money sur la même page de paiement
 const PAYMENT_METHODS = [
-  { id: 'WAVE', label: 'Wave', emoji: '🌊', needsPhone: true, phonePrefix: '+221', color: 'blue' },
-  { id: 'ORANGE_MONEY', label: 'Orange Money', emoji: '🍊', needsPhone: true, phonePrefix: '+221', color: 'orange' },
-  { id: 'STRIPE', label: 'Carte bancaire', emoji: '💳', needsPhone: false, color: 'purple' },
+  {
+    id: 'PAYDUNYA',
+    label: 'Mobile Money',
+    sub: 'Wave · Orange Money',
+    emoji: '📱',
+    needsPhone: false,
+    color: 'blue',
+  },
+  {
+    id: 'STRIPE',
+    label: 'Carte bancaire',
+    sub: 'Visa · Mastercard',
+    emoji: '💳',
+    needsPhone: false,
+    color: 'purple',
+  },
 ];
 
 const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
   medicalRequest = medicalRequest || request;
   const [amount, setAmount] = useState('');
   const [customAmount, setCustomAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('WAVE');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('PAYDUNYA');
   const [donorName, setDonorName] = useState('');
   const [donorEmail, setDonorEmail] = useState('');
+  const [donorPhone, setDonorPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
-  const [checkoutUrl, setCheckoutUrl] = useState(null);
   const [isMock, setIsMock] = useState(false);
 
   const suggestedAmounts = [10000, 25000, 50000, 100000, 250000, 500000];
@@ -40,8 +53,6 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
   };
 
   const formatAmount = (value) => new Intl.NumberFormat('fr-FR').format(value);
-
-  // Conversion FCFA → EUR pour l'affichage (Stripe)
   const toEur = (fcfa) => (fcfa / 655.957).toFixed(2);
 
   const handleSubmit = async (e) => {
@@ -49,11 +60,6 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
 
     if (!amount || amount < 1000) {
       setError('Le montant minimum est de 1 000 FCFA');
-      return;
-    }
-
-    if (selectedMethod.needsPhone && (!phoneNumber || phoneNumber.length < 8)) {
-      setError('Veuillez entrer un numéro de téléphone valide');
       return;
     }
 
@@ -65,28 +71,18 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
       const donation = await paymentsAPI.createDonation({
         medical_request_id: medicalRequest.id,
         amount: parseFloat(amount),
-        payment_method: paymentMethod
+        payment_method: paymentMethod,
       });
-
-      const fullPhone = phoneNumber.startsWith('+221')
-        ? phoneNumber
-        : `+221${phoneNumber}`;
 
       let paymentResponse;
 
-      if (paymentMethod === 'WAVE') {
-        paymentResponse = await paymentsAPI.initiateWavePayment({
+      if (paymentMethod === 'PAYDUNYA') {
+        paymentResponse = await paymentsAPI.initiatePayDunyaPayment({
           donation_id: donation.donation_id,
           amount: parseFloat(amount),
-          payer_phone: fullPhone,
-          payer_name: donorName || 'Donateur anonyme'
-        });
-      } else if (paymentMethod === 'ORANGE_MONEY') {
-        paymentResponse = await paymentsAPI.initiateOrangeMoneyPayment({
-          donation_id: donation.donation_id,
-          amount: parseFloat(amount),
-          payer_phone: fullPhone,
-          payer_name: donorName || 'Donateur anonyme'
+          payer_name: donorName || undefined,
+          payer_email: donorEmail || undefined,
+          payer_phone: donorPhone ? `+221${donorPhone}` : undefined,
         });
       } else {
         // STRIPE
@@ -94,25 +90,23 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
           donation_id: donation.donation_id,
           amount: parseFloat(amount),
           payer_name: donorName || undefined,
-          payer_email: donorEmail || undefined
+          payer_email: donorEmail || undefined,
         });
       }
 
-      const mock = paymentResponse.checkout_url?.includes('mock') ||
-                   paymentResponse.checkout_url?.includes('localhost');
+      const mock =
+        paymentResponse.checkout_url?.includes('mock') ||
+        paymentResponse.checkout_url?.includes('localhost');
 
       if (paymentResponse.checkout_url && !mock) {
-        // Production → rediriger vers le prestataire
         window.location.href = paymentResponse.checkout_url;
       } else {
-        setCheckoutUrl(paymentResponse.checkout_url || null);
         setIsMock(mock);
         setSuccess(true);
       }
-
     } catch (err) {
       console.error('Erreur donation:', err);
-      setError(err.response?.data?.detail || 'Erreur lors de l\'initiation du paiement');
+      setError(err.response?.data?.detail || "Erreur lors de l'initiation du paiement");
     } finally {
       setLoading(false);
     }
@@ -122,23 +116,21 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
     if (!loading) {
       setAmount('');
       setCustomAmount('');
-      setPhoneNumber('');
       setDonorName('');
       setDonorEmail('');
+      setDonorPhone('');
       setError(null);
       setSuccess(false);
-      setCheckoutUrl(null);
       setIsMock(false);
       onClose();
     }
   };
 
-  // ── Vue succès ──────────────────────────────────────────
+  // ── Vue succès ──────────────────────────────────────────────
   if (success) {
-    const providerLabel = selectedMethod?.label || 'paiement';
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-3xl max-w-md w-full p-8 relative animate-scale-in">
+        <div className="bg-white rounded-3xl max-w-md w-full p-8 relative">
           <button onClick={handleClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
             <X size={24} />
           </button>
@@ -151,14 +143,14 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
               <p className="text-slate-600">
                 Merci pour votre générosité ! Votre don de{' '}
                 <span className="font-bold text-blue-600">{formatAmount(amount)} FCFA</span>{' '}
-                via <strong>{providerLabel}</strong> a été initié.
+                via <strong>{selectedMethod?.label}</strong> a été initié.
               </p>
             </div>
-            {isMock && checkoutUrl && (
+            {isMock && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left">
-                <p className="text-sm text-amber-800 font-semibold mb-1">Mode développement (MOCK)</p>
+                <p className="text-sm text-amber-800 font-semibold mb-1">Mode développement (sandbox)</p>
                 <p className="text-xs text-amber-700">
-                  En production, vous seriez redirigé vers {providerLabel} pour finaliser le paiement.
+                  En production, vous seriez redirigé vers {selectedMethod?.label} pour finaliser le paiement.
                 </p>
               </div>
             )}
@@ -174,7 +166,7 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
     );
   }
 
-  // ── Formulaire principal ─────────────────────────────────
+  // ── Formulaire principal ─────────────────────────────────────
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto relative">
@@ -245,81 +237,87 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
                 type="text"
                 value={customAmount}
                 onChange={handleCustomAmountChange}
-                placeholder="Ex : 75000"
+                placeholder="Ex : 75 000"
                 className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 font-semibold">FCFA</span>
             </div>
             {paymentMethod === 'STRIPE' && amount >= 1000 && (
-              <p className="text-xs text-slate-400 mt-1">
-                ≈ {toEur(amount)} EUR (conversion au taux fixe XOF/EUR)
-              </p>
+              <p className="text-xs text-slate-400 mt-1">≈ {toEur(amount)} EUR (taux fixe XOF/EUR)</p>
             )}
           </div>
 
           {/* Moyen de paiement */}
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-3">Moyen de paiement</label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {PAYMENT_METHODS.map((method) => (
                 <button
                   key={method.id}
                   type="button"
                   onClick={() => setPaymentMethod(method.id)}
-                  className={`py-3 px-2 rounded-xl font-semibold text-sm transition-all ${
+                  className={`py-4 px-3 rounded-xl font-semibold text-sm transition-all border-2 ${
                     paymentMethod === method.id
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      ? 'border-blue-600 bg-blue-50 text-blue-700'
+                      : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
                   }`}
                 >
-                  <span className="block text-lg">{method.emoji}</span>
-                  <span className="block text-xs mt-0.5">{method.label}</span>
+                  <span className="block text-2xl mb-1">{method.emoji}</span>
+                  <span className="block font-bold">{method.label}</span>
+                  <span className="block text-xs text-slate-500 mt-0.5">{method.sub}</span>
                 </button>
               ))}
             </div>
+
+            {/* Info contextuelle */}
+            {paymentMethod === 'PAYDUNYA' && (
+              <div className="mt-3 p-3 bg-blue-50 rounded-xl flex gap-2 text-xs text-blue-700">
+                <span>📱</span>
+                <span>Vous serez redirigé vers la page de paiement sécurisée PayDunya où vous choisirez <strong>Wave</strong> ou <strong>Orange Money</strong>.</span>
+              </div>
+            )}
+            {paymentMethod === 'STRIPE' && (
+              <div className="mt-3 p-3 bg-purple-50 rounded-xl flex gap-2 text-xs text-purple-700">
+                <CreditCard size={14} className="flex-shrink-0 mt-0.5" />
+                <span>Paiement sécurisé par <strong>Stripe</strong>. Vous serez redirigé vers leur page de paiement chiffrée.</span>
+              </div>
+            )}
           </div>
 
-          {/* Numéro de téléphone (Wave / Orange Money) */}
-          {selectedMethod?.needsPhone && (
+          {/* Téléphone (optionnel, pré-rempli pour PayDunya) */}
+          {paymentMethod === 'PAYDUNYA' && (
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
-                <Phone size={15} className="inline mr-1" />
-                Numéro {selectedMethod.label}
+                <Phone size={14} className="inline mr-1" />
+                Numéro mobile <span className="text-slate-400 font-normal">(optionnel)</span>
               </label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-semibold">+221</span>
                 <input
                   type="tel"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                  value={donorPhone}
+                  onChange={(e) => setDonorPhone(e.target.value.replace(/\D/g, ''))}
                   placeholder="77 123 45 67"
                   maxLength={9}
                   className="w-full pl-16 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
-                  required={selectedMethod.needsPhone}
                 />
               </div>
             </div>
           )}
 
-          {/* Email (Stripe uniquement) */}
-          {paymentMethod === 'STRIPE' && (
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Votre e-mail <span className="text-slate-400 font-normal">(optionnel — pour votre reçu)</span>
-              </label>
-              <input
-                type="email"
-                value={donorEmail}
-                onChange={(e) => setDonorEmail(e.target.value)}
-                placeholder="votre@email.com"
-                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
-              />
-              <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
-                <CreditCard size={12} />
-                Paiement sécurisé par Stripe — vous serez redirigé vers la page de paiement.
-              </p>
-            </div>
-          )}
+          {/* E-mail */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Votre e-mail <span className="text-slate-400 font-normal">(optionnel — pour votre reçu)</span>
+            </label>
+            <input
+              type="email"
+              value={donorEmail}
+              onChange={(e) => setDonorEmail(e.target.value)}
+              placeholder="votre@email.com"
+              className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+            />
+          </div>
 
           {/* Nom */}
           <div>
@@ -355,7 +353,7 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
             </button>
             <button
               type="submit"
-              disabled={loading || !amount || (selectedMethod?.needsPhone && !phoneNumber)}
+              disabled={loading || !amount}
               className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-xl hover:shadow-blue-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               {loading ? (
@@ -366,9 +364,7 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
               ) : (
                 <>
                   <Heart size={20} fill="white" />
-                  <span>
-                    {paymentMethod === 'STRIPE' ? 'Payer par carte' : 'Confirmer le don'}
-                  </span>
+                  <span>{paymentMethod === 'STRIPE' ? 'Payer par carte' : 'Contribuer'}</span>
                 </>
               )}
             </button>
@@ -379,14 +375,6 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
           </p>
         </form>
       </div>
-
-      <style jsx>{`
-        @keyframes scale-in {
-          from { opacity: 0; transform: scale(0.9); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        .animate-scale-in { animation: scale-in 0.3s ease-out; }
-      `}</style>
     </div>
   );
 };
