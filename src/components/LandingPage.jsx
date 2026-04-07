@@ -259,7 +259,7 @@ const LandingPage = () => {
                     <div>
                       <h3 className="text-2xl font-bold text-slate-800 mb-2">{t(MEDICAL_NEED_LABELS, featured.medical_need)}</h3>
                       <p className="text-slate-600">{featured.patient_pseudonym}</p>
-                      <p className="text-sm text-slate-500 mt-1">{featured.hospital_id}</p>
+                      {featured.hospital_name && <p className="text-sm text-slate-500 mt-1">{featured.hospital_name}</p>}
                     </div>
                     <div className="space-y-3">
                       <div className="flex justify-between text-sm">
@@ -458,7 +458,7 @@ const LandingPage = () => {
                     <div>
                       <h3 className="text-xl font-bold text-slate-800 mb-1">{t(MEDICAL_NEED_LABELS, case_.medical_need)}</h3>
                       <p className="text-sm text-slate-500">{case_.patient_pseudonym}</p>
-                      <p className="text-xs text-slate-400 mt-1">{case_.hospital_id}</p>
+                      {case_.hospital_name && <p className="text-xs text-slate-400 mt-1">{case_.hospital_name}</p>}
                     </div>
 
                     <div className="space-y-2">
