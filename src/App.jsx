@@ -7,12 +7,14 @@ import AdminDashboard from './components/AdminDashboard';
 import RequestDetailPage from './components/RequestDetailPage';
 import PrivacyPolicyPage from './components/PrivacyPolicyPage';
 import PaymentStatusPage from './components/PaymentStatusPage';
+import { LangProvider } from './utils/i18n';
 
 function App() {
   console.log('🔍 VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
   console.log('🔍 MODE:', import.meta.env.MODE);
-  
+
   return (
+    <LangProvider>
     <Router>
       <Routes>
         <Route path="/" element={<LandingPage />} />
@@ -26,6 +28,7 @@ function App() {
         <Route path="/paiement/annule" element={<PaymentStatusPage status="cancelled" />} />
       </Routes>
     </Router>
+    </LangProvider>
   );
 }
 

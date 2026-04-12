@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Heart, Shield, Users, ChevronRight, ArrowRight, CheckCircle, Clock, TrendingUp } from 'lucide-react';
 import { medicalRequestsAPI } from '../services/api';
 import DonationModal from '../components/DonationModal';
-import { MEDICAL_NEED_LABELS, URGENCY_LABELS, t } from '../utils/translations';
+import { useLang, useTranslation } from '../utils/i18n';
 
 // Composant Logo JAPPOO FAJU
 const JappooFajuLogo = ({ size = 48 }) => (
@@ -48,7 +48,19 @@ const JappooFajuLogo = ({ size = 48 }) => (
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const { lang, switchLang } = useLang();
+  const { t: tl } = useTranslation(lang);
   const [scrollY, setScrollY] = useState(0);
+
+  // Helper: urgency/medical labels via i18n
+  const urgencyLabel = (level) => {
+    const map = { CRITICAL: 'urgency_critical', HIGH: 'urgency_high', MEDIUM: 'urgency_medium', LOW: 'urgency_low' };
+    return tl(map[level] || level);
+  };
+  const needLabel = (need) => {
+    const map = { SURGERY: 'need_surgery', MEDICATION: 'need_medication', EXAM: 'need_exam', KIT: 'need_kit', DIALYSIS: 'need_dialysis' };
+    return tl(map[need] || need);
+  };
   const [urgentCases, setUrgentCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -113,28 +125,28 @@ const LandingPage = () => {
   };
 
   const stats = [
-    { value: "15,000", label: "Vies à sauver", icon: Heart },
-    { value: "100%", label: "Transparence", icon: Shield },
-    { value: "50,000", label: "Donateurs visés", icon: Users }
+    { value: "15,000", labelKey: "hero_stat_patients", icon: Heart },
+    { value: "100%", labelKey: "hero_stat_hospitals", icon: Shield },
+    { value: "50,000", labelKey: "hero_stat_donors", icon: Users }
   ];
 
   const howItWorks = [
     {
       step: "1",
-      title: "L'hôpital publie",
-      description: "Un agent vérifié crée une demande avec documents médicaux",
+      titleKey: "how_step1_title",
+      descKey: "how_step1_desc",
       color: "from-blue-500 to-cyan-500"
     },
     {
       step: "2",
-      title: "Nous validons",
-      description: "Notre équipe vérifie chaque demande avant publication",
+      titleKey: "how_step2_title",
+      descKey: "how_step2_desc",
       color: "from-purple-500 to-pink-500"
     },
     {
       step: "3",
-      title: "Vous donnez",
-      description: "Les fonds vont directement à l'hôpital ou à la pharmacie",
+      titleKey: "how_step3_title",
+      descKey: "how_step3_desc",
       color: "from-orange-500 to-red-500"
     }
   ];
@@ -158,17 +170,28 @@ const LandingPage = () => {
           </div>
 
           <div className="hidden md:flex items-center space-x-8">
-            <a href="#comment" className="text-slate-600 hover:text-blue-600 font-medium transition-colors">Comment ça marche</a>
-            <a href="#urgences" className="text-slate-600 hover:text-blue-600 font-medium transition-colors">Cas urgents</a>
-            <a href="#impact" className="text-slate-600 hover:text-blue-600 font-medium transition-colors">Notre impact</a>
+            <a href="#comment" className="text-slate-600 hover:text-blue-600 font-medium transition-colors">{tl('how_title')}</a>
+            <a href="#urgences" className="text-slate-600 hover:text-blue-600 font-medium transition-colors">{tl('cases_title')}</a>
+            <a href="#impact" className="text-slate-600 hover:text-blue-600 font-medium transition-colors">{tl('impact_title')}</a>
           </div>
 
           <div className="flex items-center space-x-4">
+            {/* FR/EN switcher */}
+            <div className="flex items-center rounded-xl overflow-hidden border border-blue-200 text-sm font-bold">
+              <button
+                onClick={() => switchLang('fr')}
+                className={`px-3 py-1.5 transition-all ${lang === 'fr' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-blue-50'}`}
+              >FR</button>
+              <button
+                onClick={() => switchLang('en')}
+                className={`px-3 py-1.5 transition-all ${lang === 'en' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-blue-50'}`}
+              >EN</button>
+            </div>
             <button onClick={() => navigate('/auth')} className="px-6 py-2.5 text-blue-600 font-semibold hover:bg-blue-50 rounded-xl transition-all">
-              Connexion
+              {tl('nav_login')}
             </button>
             <button onClick={() => navigate('/auth')} className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-xl hover:shadow-blue-500/30 transition-all transform hover:scale-105">
-              Faire un don
+              {tl('hero_cta_donate')}
             </button>
           </div>
         </div>
@@ -189,33 +212,30 @@ const LandingPage = () => {
             <div className="space-y-8 animate-fade-in">
               <div className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
                 <TrendingUp size={16} />
-                <span>Lancement officiel - Rejoignez le mouvement</span>
+                <span>{tl('hero_badge')}</span>
               </div>
 
               <h1 className="text-5xl lg:text-7xl font-black leading-tight">
                 <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-600 bg-clip-text text-transparent">
-                  Chaque don
+                  {tl('hero_title_1')}
                 </span>
                 <br />
-                <span className="text-slate-800">sauve une vie</span>
+                <span className="text-slate-800">{tl('hero_title_2')}</span>
               </h1>
 
               <p className="text-xl text-slate-600 leading-relaxed max-w-xl">
-                JAPPOO FAJU connecte les hôpitaux sénégalais aux donateurs du monde entier.
-                <span className="font-semibold text-slate-800"> 100% transparent.</span>
-                <span className="font-semibold text-slate-800"> 0% de frais.</span>
-                <span className="font-semibold text-slate-800"> Chaque franc compte.</span>
+                {tl('hero_subtitle')}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <button onClick={() => navigate('/auth')} className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-blue-500/40 transition-all transform hover:scale-105 flex items-center justify-center space-x-2">
                   <Heart size={20} fill="white" />
-                  <span>Faire un don maintenant</span>
+                  <span>{tl('hero_cta_donate')}</span>
                   <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
                 </button>
 
                 <button onClick={() => navigate('/auth')} className="px-8 py-4 bg-white border-2 border-blue-200 text-blue-600 font-bold rounded-2xl hover:bg-blue-50 transition-all flex items-center justify-center space-x-2">
-                  <span>Je suis un hôpital</span>
+                  <span>{tl('hero_cta_hospital')}</span>
                   <ChevronRight size={20} />
                 </button>
               </div>
@@ -228,7 +248,7 @@ const LandingPage = () => {
                       <stat.icon className="text-blue-600" size={24} />
                     </div>
                     <div className="text-3xl font-black text-slate-800">{stat.value}</div>
-                    <div className="text-sm text-slate-500">{stat.label}</div>
+                    <div className="text-sm text-slate-500">{tl(stat.labelKey)}</div>
                   </div>
                 ))}
               </div>
@@ -252,18 +272,18 @@ const LandingPage = () => {
                     <div className="flex items-center justify-between">
                       <span className={`px-4 py-2 ${urgencyColor} rounded-full text-sm font-bold flex items-center space-x-2`}>
                         <Clock size={16} />
-                        <span>{t(URGENCY_LABELS, featured.urgency_level)}{featured.daysLeft ? ` - ${featured.daysLeft} jour${featured.daysLeft > 1 ? 's' : ''} restant${featured.daysLeft > 1 ? 's' : ''}` : ''}</span>
+                        <span>{urgencyLabel(featured.urgency_level)}{featured.daysLeft ? ` - ${featured.daysLeft} ${tl('cases_days_left')}` : ''}</span>
                       </span>
                       <Heart className="text-red-500 hover:scale-110 transition-transform cursor-pointer" size={24} />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold text-slate-800 mb-2">{t(MEDICAL_NEED_LABELS, featured.medical_need)}</h3>
+                      <h3 className="text-2xl font-bold text-slate-800 mb-2">{needLabel(featured.medical_need)}</h3>
                       <p className="text-slate-600">{featured.patient_pseudonym}</p>
                       {featured.hospital_name && <p className="text-sm text-slate-500 mt-1">{featured.hospital_name}</p>}
                     </div>
                     <div className="space-y-3">
                       <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">{Number(featured.amount_raised).toLocaleString()} FCFA collectés</span>
+                        <span className="text-slate-600">{Number(featured.amount_raised).toLocaleString()} FCFA {tl('cases_collected')}</span>
                         <span className="font-bold text-blue-600">{Math.round(pct)}%</span>
                       </div>
                       <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
@@ -271,7 +291,7 @@ const LandingPage = () => {
                              style={{ width: `${pct}%` }}></div>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-slate-500">Objectif : {Number(featured.amount_needed).toLocaleString()} FCFA</span>
+                        <span className="text-slate-500">{tl('cases_goal')} : {Number(featured.amount_needed).toLocaleString()} FCFA</span>
                         <span className="text-slate-500">{Number(featured.amount_needed - featured.amount_raised).toLocaleString()} restants</span>
                       </div>
                     </div>
@@ -281,7 +301,7 @@ const LandingPage = () => {
                       className="w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl hover:shadow-xl hover:shadow-blue-500/30 transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Heart size={20} fill="white" />
-                      <span>Contribuer maintenant</span>
+                      <span>{tl('cases_donate_btn')}</span>
                     </button>
                     <div className="pt-4 border-t border-slate-200 flex items-center justify-between text-sm">
                       <div className="flex items-center space-x-2">
@@ -290,7 +310,7 @@ const LandingPage = () => {
                             <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 border-2 border-white"></div>
                           ))}
                         </div>
-                        <span className="text-slate-600 font-semibold">Donateurs actifs</span>
+                        <span className="text-slate-600 font-semibold">{tl('hero_stat_donors')}</span>
                       </div>
                       <span className="text-blue-600 font-semibold">Vérifié ✓</span>
                     </div>
@@ -346,10 +366,12 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl lg:text-5xl font-black text-slate-800 mb-6">
-              Comment fonctionne JAPPOO FAJU ?
+              {tl('how_title')}
             </h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              Un système transparent et sécurisé qui garantit que chaque franc arrive à destination
+              {lang === 'fr'
+                ? 'Un système transparent et sécurisé qui garantit que chaque franc arrive à destination'
+                : 'A transparent and secure system ensuring every franc reaches its destination'}
             </p>
           </div>
 
@@ -362,8 +384,8 @@ const LandingPage = () => {
                   <div className={`w-16 h-16 bg-gradient-to-br ${item.color} rounded-2xl flex items-center justify-center text-white text-3xl font-black mb-6 transform rotate-3`}>
                     {item.step}
                   </div>
-                  <h3 className="text-2xl font-bold text-slate-800 mb-4">{item.title}</h3>
-                  <p className="text-slate-600 leading-relaxed">{item.description}</p>
+                  <h3 className="text-2xl font-bold text-slate-800 mb-4">{tl(item.titleKey)}</h3>
+                  <p className="text-slate-600 leading-relaxed">{tl(item.descKey)}</p>
                 </div>
               </div>
             ))}
@@ -402,14 +424,14 @@ const LandingPage = () => {
           <div className="flex items-center justify-between mb-12">
             <div>
               <h2 className="text-4xl lg:text-5xl font-black text-slate-800 mb-4">
-                Cas urgents en ce moment
+                {tl('cases_title')}
               </h2>
               <p className="text-xl text-slate-600">
-                Ces patients ont besoin de votre aide aujourd'hui
+                {tl('cases_subtitle')}
               </p>
             </div>
             <a href="#urgences" className="px-6 py-3 bg-white border-2 border-blue-200 text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-all">
-              Voir tous les cas →
+              {tl('cases_filter_all')} →
             </a>
           </div>
 
@@ -450,13 +472,13 @@ const LandingPage = () => {
                   <div className="p-6 space-y-4">
                     <div className="flex items-center justify-between">
                       <span className={`px-3 py-1 ${case_.urgency_level === 'CRITICAL' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'} rounded-full text-xs font-bold`}>
-                        {t(URGENCY_LABELS, case_.urgency_level)} • {case_.daysLeft ? `${case_.daysLeft}J restants` : 'En cours'}
+                        {urgencyLabel(case_.urgency_level)} • {case_.daysLeft ? `${case_.daysLeft} ${tl('cases_days_left')}` : (lang === 'fr' ? 'En cours' : 'In progress')}
                       </span>
                       <Heart className="text-slate-300 group-hover:text-red-500 group-hover:scale-110 transition-all cursor-pointer" size={20} />
                     </div>
 
                     <div>
-                      <h3 className="text-xl font-bold text-slate-800 mb-1">{t(MEDICAL_NEED_LABELS, case_.medical_need)}</h3>
+                      <h3 className="text-xl font-bold text-slate-800 mb-1">{needLabel(case_.medical_need)}</h3>
                       <p className="text-sm text-slate-500">{case_.patient_pseudonym}</p>
                       {case_.hospital_name && <p className="text-xs text-slate-400 mt-1">{case_.hospital_name}</p>}
                     </div>
@@ -483,14 +505,14 @@ const LandingPage = () => {
                         to={`/cas/${case_.id}`}
                         className="flex-1 py-3 text-center border-2 border-blue-200 text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-all text-sm"
                       >
-                        Voir le détail
+                        {lang === 'fr' ? 'Voir le détail' : 'View details'}
                       </Link>
                       <button
                         onClick={() => handleDonateClick(case_)}
                         disabled={!case_.id}
                         className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all transform group-hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                       >
-                        Contribuer
+                        {tl('cases_donate_btn')}
                       </button>
                     </div>
                   </div>
@@ -505,9 +527,9 @@ const LandingPage = () => {
       <section id="impact" className="py-20 px-6 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-black text-slate-800 mb-6">Notre impact</h2>
+            <h2 className="text-4xl lg:text-5xl font-black text-slate-800 mb-6">{tl('impact_title')}</h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              Chaque franc collecté est tracé, chaque patient aidé est documenté
+              {tl('impact_subtitle')}
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
@@ -556,23 +578,26 @@ const LandingPage = () => {
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <Heart className="mx-auto mb-8 text-white animate-pulse" size={64} fill="white" />
           <h2 className="text-5xl lg:text-6xl font-black text-white mb-6">
-            Rejoignez le mouvement
+            {tl('cta_title')}
           </h2>
           <p className="text-2xl text-blue-100 mb-12">
-            Ensemble, nous pouvons sauver des milliers de vies
+            {tl('cta_subtitle')}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <button onClick={() => navigate('/auth')} className="px-10 py-5 bg-white text-blue-600 font-bold text-lg rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105">
-              Devenir donateur
+              {tl('cta_btn')}
             </button>
             <button onClick={() => navigate('/auth')} className="px-10 py-5 bg-transparent border-2 border-white text-white font-bold text-lg rounded-2xl hover:bg-white/10 transition-all">
-              Je suis un hôpital
+              {tl('hero_cta_hospital')}
             </button>
           </div>
 
           <p className="mt-8 text-blue-100 text-sm">
-            Déjà membre ? <button onClick={() => navigate('/auth')} className="underline font-semibold hover:text-white">Connectez-vous</button>
+            {lang === 'fr' ? 'Déjà membre ?' : 'Already a member?'}{' '}
+            <button onClick={() => navigate('/auth')} className="underline font-semibold hover:text-white">
+              {tl('nav_login')}
+            </button>
           </p>
         </div>
       </section>
