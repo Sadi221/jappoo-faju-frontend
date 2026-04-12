@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Heart, Shield, Users, ChevronRight, ArrowRight, CheckCircle, Clock, TrendingUp } from 'lucide-react';
 import { medicalRequestsAPI } from '../services/api';
 import DonationModal from '../components/DonationModal';
-import { useLang, useTranslation } from '../utils/i18n';
+import { useLang, useTranslation } from '../utils/i18n.jsx';
 
 // Composant Logo JAPPOO FAJU
 const JappooFajuLogo = ({ size = 48 }) => (

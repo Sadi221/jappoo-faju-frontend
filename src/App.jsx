@@ -7,7 +7,7 @@ import AdminDashboard from './components/AdminDashboard';
 import RequestDetailPage from './components/RequestDetailPage';
 import PrivacyPolicyPage from './components/PrivacyPolicyPage';
 import PaymentStatusPage from './components/PaymentStatusPage';
-import { LangProvider } from './utils/i18n';
+import { LangProvider } from './utils/i18n.jsx';
 
 function App() {
   console.log('🔍 VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
