@@ -67,6 +67,42 @@ export const translations = {
     need_kit: 'Kit médical',
     need_dialysis: 'Dialyse',
     need_other: 'Autre',
+
+    // Problem section
+    problem_title: 'La réalité des soins au Sénégal',
+    problem_subtitle: 'Des milliers de Sénégalais meurent chaque année faute de moyens pour se soigner. JAPPOO FAJU est né pour changer cela.',
+    problem_stat1: 'des familles ne peuvent pas payer les soins d\'urgence',
+    problem_stat2: 'décès évitables chaque année par manque de financement',
+    problem_stat3: 'coût moyen d\'une intervention chirurgicale',
+
+    // Transparency banner
+    transparent_title: '100% Transparent, 0% de Frais',
+    transparent_desc: 'Les fonds sont versés directement aux hôpitaux et pharmacies partenaires. Vous recevez une preuve de paiement vérifiée pour chaque don.',
+    transparent_check1: 'Hôpitaux vérifiés',
+    transparent_check2: 'Reçus automatiques',
+    transparent_check3: 'Suivi en temps réel',
+
+    // Impact cards
+    impact_stat1: 'des fonds reversés aux bénéficiaires',
+    impact_stat2: 'de frais de gestion sur vos dons',
+    impact_stat3: 'délai moyen de validation des demandes',
+    impact_about: 'est une initiative de l\'association',
+    impact_dss_desc: ', organisation française engagée depuis 2010 pour améliorer l\'accès aux soins en Afrique de l\'Ouest.',
+
+    // Footer
+    footer_platform: 'Plateforme',
+    footer_legal: 'Légal',
+    footer_contact: 'Contact',
+    footer_how: 'Comment ça marche',
+    footer_donate: 'Faire un don',
+    footer_cases: 'Cas urgents',
+    footer_impact: 'Notre impact',
+    footer_privacy_link: 'Politique de confidentialité',
+    footer_about_dss: 'À propos de DSS',
+    footer_tagline: 'La plateforme de solidarité médicale qui sauve des vies au Sénégal.',
+    footer_initiative: 'Une initiative de l\'association',
+    footer_bottom: 'Tous droits réservés.',
+    footer_made_with: 'Fait avec ❤️ pour le Sénégal',
   },
 
   en: {
@@ -136,6 +172,42 @@ export const translations = {
     need_kit: 'Medical kit',
     need_dialysis: 'Dialysis',
     need_other: 'Other',
+
+    // Problem section
+    problem_title: 'The reality of healthcare in Senegal',
+    problem_subtitle: 'Thousands of Senegalese people die every year due to lack of funds for medical care. JAPPOO FAJU was created to change that.',
+    problem_stat1: 'of families cannot afford emergency care',
+    problem_stat2: 'preventable deaths each year due to lack of funding',
+    problem_stat3: 'average cost of a surgical procedure',
+
+    // Transparency banner
+    transparent_title: '100% Transparent, 0% Fees',
+    transparent_desc: 'Funds go directly to partner hospitals and pharmacies. You receive a verified payment receipt for every donation.',
+    transparent_check1: 'Verified hospitals',
+    transparent_check2: 'Automatic receipts',
+    transparent_check3: 'Real-time tracking',
+
+    // Impact cards
+    impact_stat1: 'of funds returned to beneficiaries',
+    impact_stat2: 'management fees on your donations',
+    impact_stat3: 'average request validation time',
+    impact_about: 'is an initiative of the association',
+    impact_dss_desc: ', a French organization committed since 2010 to improving access to healthcare in West Africa.',
+
+    // Footer
+    footer_platform: 'Platform',
+    footer_legal: 'Legal',
+    footer_contact: 'Contact',
+    footer_how: 'How it works',
+    footer_donate: 'Make a donation',
+    footer_cases: 'Urgent cases',
+    footer_impact: 'Our impact',
+    footer_privacy_link: 'Privacy Policy',
+    footer_about_dss: 'About DSS',
+    footer_tagline: 'The medical solidarity platform saving lives in Senegal.',
+    footer_initiative: 'An initiative of the association',
+    footer_bottom: 'All rights reserved.',
+    footer_made_with: 'Made with ❤️ for Senegal',
   }
 }
 

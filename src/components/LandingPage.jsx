@@ -336,25 +336,24 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-16">
             <h2 className="text-4xl lg:text-5xl font-black mb-6">
-              La réalité des soins au Sénégal
+              {tl('problem_title')}
             </h2>
             <p className="text-xl text-slate-300 max-w-3xl mx-auto">
-              Des milliers de Sénégalais meurent chaque année faute de moyens pour se soigner.
-              JAPPOO FAJU est né pour changer cela.
+              {tl('problem_subtitle')}
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { number: "60%", text: "des familles ne peuvent pas payer les soins d'urgence" },
-              { number: "2,000+", text: "décès évitables chaque année par manque de financement" },
-              { number: "500K FCFA", text: "coût moyen d'une intervention chirurgicale" }
+              { number: "60%", textKey: "problem_stat1" },
+              { number: "2,000+", textKey: "problem_stat2" },
+              { number: "500K FCFA", textKey: "problem_stat3" }
             ].map((stat, i) => (
               <div key={i} className="text-center p-8 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 hover:bg-white/10 transition-all">
                 <div className="text-5xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-4">
                   {stat.number}
                 </div>
-                <p className="text-slate-300 text-lg">{stat.text}</p>
+                <p className="text-slate-300 text-lg">{tl(stat.textKey)}</p>
               </div>
             ))}
           </div>
@@ -394,23 +393,22 @@ const LandingPage = () => {
           <div className="mt-16 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-3xl p-12 text-white text-center">
             <div className="max-w-3xl mx-auto">
               <Shield className="mx-auto mb-6" size={48} />
-              <h3 className="text-3xl font-black mb-4">100% Transparent, 0% de Frais</h3>
+              <h3 className="text-3xl font-black mb-4">{tl('transparent_title')}</h3>
               <p className="text-xl text-blue-100 mb-8">
-                Les fonds sont versés directement aux hôpitaux et pharmacies partenaires.
-                Vous recevez une preuve de paiement vérifiée pour chaque don.
+                {tl('transparent_desc')}
               </p>
               <div className="flex items-center justify-center space-x-6">
                 <div className="flex items-center space-x-2">
                   <CheckCircle size={24} />
-                  <span className="font-semibold">Hôpitaux vérifiés</span>
+                  <span className="font-semibold">{tl('transparent_check1')}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <CheckCircle size={24} />
-                  <span className="font-semibold">Reçus automatiques</span>
+                  <span className="font-semibold">{tl('transparent_check2')}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <CheckCircle size={24} />
-                  <span className="font-semibold">Suivi en temps réel</span>
+                  <span className="font-semibold">{tl('transparent_check3')}</span>
                 </div>
               </div>
             </div>
@@ -534,24 +532,23 @@ const LandingPage = () => {
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { icon: Heart, value: "100%", label: "des fonds reversés aux bénéficiaires", color: "text-red-500", bg: "bg-red-50" },
-              { icon: Shield, value: "0 FCFA", label: "de frais de gestion sur vos dons", color: "text-blue-600", bg: "bg-blue-50" },
-              { icon: Users, value: "48h", label: "délai moyen de validation des demandes", color: "text-green-600", bg: "bg-green-50" },
+              { icon: Heart, value: "100%", labelKey: "impact_stat1", color: "text-red-500", bg: "bg-red-50" },
+              { icon: Shield, value: "0 FCFA", labelKey: "impact_stat2", color: "text-blue-600", bg: "bg-blue-50" },
+              { icon: Users, value: "48h", labelKey: "impact_stat3", color: "text-green-600", bg: "bg-green-50" },
             ].map((item, i) => (
               <div key={i} className={`${item.bg} rounded-3xl p-10 text-center border border-slate-100 hover:shadow-xl transition-all`}>
                 <div className="flex justify-center mb-4">
                   <item.icon className={item.color} size={40} />
                 </div>
                 <div className={`text-5xl font-black ${item.color} mb-3`}>{item.value}</div>
-                <p className="text-slate-600 text-lg">{item.label}</p>
+                <p className="text-slate-600 text-lg">{tl(item.labelKey)}</p>
               </div>
             ))}
           </div>
           <div className="mt-16 bg-gradient-to-br from-slate-50 to-blue-50 rounded-3xl p-10 border border-blue-100 text-center">
             <p className="text-slate-700 text-lg leading-relaxed max-w-3xl mx-auto">
-              <span className="font-bold text-blue-700">JAPPOO FAJU</span> est une initiative de l'association{' '}
-              <span className="font-bold">Développement Solidaire et Santé (DSS)</span>, organisation française
-              engagée depuis 2010 pour améliorer l'accès aux soins en Afrique de l'Ouest.
+              <span className="font-bold text-blue-700">JAPPOO FAJU</span> {tl('impact_about')}{' '}
+              <span className="font-bold">Développement Solidaire et Santé (DSS)</span>{tl('impact_dss_desc')}
             </p>
             <a
               href="https://www.dss-france.org"
@@ -614,10 +611,10 @@ const LandingPage = () => {
                 <span className="text-xl font-black">JAPPOO FAJU</span>
               </div>
               <p className="text-slate-400 text-sm leading-relaxed">
-                La plateforme de solidarité médicale qui sauve des vies au Sénégal.
+                {tl('footer_tagline')}
               </p>
               <p className="text-slate-500 text-xs mt-3 leading-relaxed">
-                Une initiative de l'association{' '}
+                {tl('footer_initiative')}{' '}
                 <a href="https://www.dss-france.org" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
                   Développement Solidaire et Santé – DSS
                 </a>
@@ -625,25 +622,25 @@ const LandingPage = () => {
             </div>
 
             <div>
-              <h4 className="font-bold mb-4">Plateforme</h4>
+              <h4 className="font-bold mb-4">{tl('footer_platform')}</h4>
               <ul className="space-y-2 text-sm text-slate-400">
-                <li><a href="#comment" className="hover:text-white transition-colors">Comment ça marche</a></li>
-                <li><button onClick={() => navigate('/auth')} className="hover:text-white transition-colors text-left">Faire un don</button></li>
-                <li><a href="#urgences" className="hover:text-white transition-colors">Cas urgents</a></li>
-                <li><a href="#impact" className="hover:text-white transition-colors">Notre impact</a></li>
+                <li><a href="#comment" className="hover:text-white transition-colors">{tl('footer_how')}</a></li>
+                <li><button onClick={() => navigate('/auth')} className="hover:text-white transition-colors text-left">{tl('footer_donate')}</button></li>
+                <li><a href="#urgences" className="hover:text-white transition-colors">{tl('footer_cases')}</a></li>
+                <li><a href="#impact" className="hover:text-white transition-colors">{tl('footer_impact')}</a></li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-bold mb-4">Légal</h4>
+              <h4 className="font-bold mb-4">{tl('footer_legal')}</h4>
               <ul className="space-y-2 text-sm text-slate-400">
-                <li><Link to="/politique-de-confidentialite" className="hover:text-white transition-colors">Politique de confidentialité</Link></li>
-                <li><a href="https://www.dss-france.org" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">À propos de DSS</a></li>
+                <li><Link to="/politique-de-confidentialite" className="hover:text-white transition-colors">{tl('footer_privacy_link')}</Link></li>
+                <li><a href="https://www.dss-france.org" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">{tl('footer_about_dss')}</a></li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-bold mb-4">Contact</h4>
+              <h4 className="font-bold mb-4">{tl('footer_contact')}</h4>
               <ul className="space-y-2 text-sm text-slate-400">
                 <li><a href="mailto:contact@jappoofaju.org" className="hover:text-white transition-colors">contact@jappoofaju.org</a></li>
                 <li><a href="tel:+221783767008" className="hover:text-white transition-colors">+221 78 376 70 08</a></li>
@@ -653,8 +650,8 @@ const LandingPage = () => {
           </div>
 
           <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center text-sm text-slate-400 gap-2">
-            <p>© 2026 JAPPOO FAJU — Une initiative de <a href="https://www.dss-france.org" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">DSS France</a>. Tous droits réservés.</p>
-            <p>Fait avec ❤️ pour le Sénégal</p>
+            <p>© 2026 JAPPOO FAJU — {tl('footer_initiative')} <a href="https://www.dss-france.org" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">DSS France</a>. {tl('footer_bottom')}</p>
+            <p>{tl('footer_made_with')}</p>
           </div>
         </div>
       </footer>
