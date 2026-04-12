@@ -292,7 +292,7 @@ const LandingPage = () => {
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-slate-500">{tl('cases_goal')} : {Number(featured.amount_needed).toLocaleString()} FCFA</span>
-                        <span className="text-slate-500">{Number(featured.amount_needed - featured.amount_raised).toLocaleString()} restants</span>
+                        <span className="text-slate-500">{Number(featured.amount_needed - featured.amount_raised).toLocaleString()} {tl('cases_remaining')}</span>
                       </div>
                     </div>
                     <button
@@ -312,7 +312,7 @@ const LandingPage = () => {
                         </div>
                         <span className="text-slate-600 font-semibold">{tl('hero_stat_donors')}</span>
                       </div>
-                      <span className="text-blue-600 font-semibold">Vérifié ✓</span>
+                      <span className="text-blue-600 font-semibold">{tl('cases_verified')}</span>
                     </div>
                   </div>
                 );

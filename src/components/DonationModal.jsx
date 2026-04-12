@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { X, Heart, Phone, CreditCard, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { paymentsAPI } from '../services/api';
-import { MEDICAL_NEED_LABELS, t } from '../utils/translations';
+import { useLang, useTranslation } from '../utils/i18n.jsx';
 
 // PayDunya couvre Wave + Orange Money sur la même page de paiement
 const PAYMENT_METHODS = [
@@ -25,6 +25,13 @@ const PAYMENT_METHODS = [
 
 const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
   medicalRequest = medicalRequest || request;
+  const { lang } = useLang();
+  const { t } = useTranslation(lang);
+
+  const needLabel = (need) => {
+    const map = { SURGERY: 'need_surgery', MEDICATION: 'need_medication', EXAM: 'need_exam', KIT: 'need_kit', DIALYSIS: 'need_dialysis' };
+    return t(map[need] || need);
+  };
   const [amount, setAmount] = useState('');
   const [customAmount, setCustomAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('PAYDUNYA');
@@ -59,7 +66,7 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
     e.preventDefault();
 
     if (!amount || amount < 1000) {
-      setError('Le montant minimum est de 1 000 FCFA');
+      setError(t('donate_min_error'));
       return;
     }
 
@@ -139,18 +146,18 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
               <CheckCircle className="text-green-600" size={40} />
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-slate-800 mb-2">Don initié !</h3>
+              <h3 className="text-2xl font-bold text-slate-800 mb-2">{t('donate_success_title')}</h3>
               <p className="text-slate-600">
-                Merci pour votre générosité ! Votre don de{' '}
+                {t('donate_success_msg')}{' '}
                 <span className="font-bold text-blue-600">{formatAmount(amount)} FCFA</span>{' '}
-                via <strong>{selectedMethod?.label}</strong> a été initié.
+                {t('donate_success_via')} <strong>{selectedMethod?.label}</strong> {t('donate_success_initiated')}
               </p>
             </div>
             {isMock && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left">
-                <p className="text-sm text-amber-800 font-semibold mb-1">Mode développement (sandbox)</p>
+                <p className="text-sm text-amber-800 font-semibold mb-1">{t('donate_sandbox_title')}</p>
                 <p className="text-xs text-amber-700">
-                  En production, vous seriez redirigé vers {selectedMethod?.label} pour finaliser le paiement.
+                  {t('donate_sandbox_msg')} {selectedMethod?.label} {t('donate_sandbox_end')}
                 </p>
               </div>
             )}
@@ -158,7 +165,7 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
               onClick={handleClose}
               className="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all"
             >
-              Fermer
+              {t('donate_close')}
             </button>
           </div>
         </div>
@@ -182,7 +189,7 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
           </button>
           <div className="flex items-center space-x-3">
             <Heart size={32} fill="white" />
-            <h2 className="text-2xl font-bold">Faire un don</h2>
+            <h2 className="text-2xl font-bold">{t('donate_title')}</h2>
           </div>
         </div>
 
@@ -191,26 +198,26 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
           {/* Résumé demande */}
           <div className="bg-slate-50 rounded-xl p-4 space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-slate-600">Patient :</span>
+              <span className="text-slate-600">{t('donate_patient')} :</span>
               <span className="font-semibold text-slate-800">{medicalRequest.patient_pseudonym}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-slate-600">Besoin :</span>
-              <span className="font-semibold text-slate-800">{t(MEDICAL_NEED_LABELS, medicalRequest.medical_need)}</span>
+              <span className="text-slate-600">{t('donate_need')} :</span>
+              <span className="font-semibold text-slate-800">{needLabel(medicalRequest.medical_need)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-slate-600">Objectif :</span>
+              <span className="text-slate-600">{t('donate_goal')} :</span>
               <span className="font-semibold text-blue-600">{formatAmount(medicalRequest.amount_needed)} FCFA</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-slate-600">Collecté :</span>
+              <span className="text-slate-600">{t('donate_collected')} :</span>
               <span className="font-semibold text-green-600">{formatAmount(medicalRequest.amount_raised)} FCFA</span>
             </div>
           </div>
 
           {/* Montants suggérés */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-3">Choisir un montant</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-3">{t('donate_choose_amount')}</label>
             <div className="grid grid-cols-3 gap-3">
               {suggestedAmounts.map((value) => (
                 <button
@@ -231,7 +238,7 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
 
           {/* Montant personnalisé */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Ou entrez un montant</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">{t('donate_custom_amount')}</label>
             <div className="relative">
               <input
                 type="text"
@@ -249,7 +256,7 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
 
           {/* Moyen de paiement */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-3">Moyen de paiement</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-3">{t('donate_payment_method')}</label>
             <div className="grid grid-cols-2 gap-3">
               {PAYMENT_METHODS.map((method) => (
                 <button
@@ -273,13 +280,13 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
             {paymentMethod === 'PAYDUNYA' && (
               <div className="mt-3 p-3 bg-blue-50 rounded-xl flex gap-2 text-xs text-blue-700">
                 <span>📱</span>
-                <span>Vous serez redirigé vers la page de paiement sécurisée PayDunya où vous choisirez <strong>Wave</strong> ou <strong>Orange Money</strong>.</span>
+                <span>{t('donate_paydunya_info')}</span>
               </div>
             )}
             {paymentMethod === 'STRIPE' && (
               <div className="mt-3 p-3 bg-purple-50 rounded-xl flex gap-2 text-xs text-purple-700">
                 <CreditCard size={14} className="flex-shrink-0 mt-0.5" />
-                <span>Paiement sécurisé par <strong>Stripe</strong>. Vous serez redirigé vers leur page de paiement chiffrée.</span>
+                <span>{t('donate_stripe_info')}</span>
               </div>
             )}
           </div>
@@ -289,7 +296,7 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
                 <Phone size={14} className="inline mr-1" />
-                Numéro mobile <span className="text-slate-400 font-normal">(optionnel)</span>
+                {t('donate_phone_label')} <span className="text-slate-400 font-normal">({t('donate_optional')})</span>
               </label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-semibold">+221</span>
@@ -308,7 +315,7 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
           {/* E-mail */}
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Votre e-mail <span className="text-slate-400 font-normal">(optionnel — pour votre reçu)</span>
+              {t('donate_email_label')} <span className="text-slate-400 font-normal">({t('donate_optional')} — {t('donate_email_hint')})</span>
             </label>
             <input
               type="email"
@@ -322,7 +329,7 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
           {/* Nom */}
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Votre nom <span className="text-slate-400 font-normal">(optionnel)</span>
+              {t('donate_name_label')} <span className="text-slate-400 font-normal">({t('donate_optional')})</span>
             </label>
             <input
               type="text"
@@ -349,7 +356,7 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
               disabled={loading}
               className="flex-1 py-3 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition-all disabled:opacity-50"
             >
-              Annuler
+              {t('donate_cancel')}
             </button>
             <button
               type="submit"
@@ -359,19 +366,19 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
               {loading ? (
                 <>
                   <Loader2 className="animate-spin" size={20} />
-                  <span>Traitement...</span>
+                  <span>{t('donate_processing')}</span>
                 </>
               ) : (
                 <>
                   <Heart size={20} fill="white" />
-                  <span>{paymentMethod === 'STRIPE' ? 'Payer par carte' : 'Contribuer'}</span>
+                  <span>{paymentMethod === 'STRIPE' ? t('donate_pay_card') : t('donate_contribute')}</span>
                 </>
               )}
             </button>
           </div>
 
           <p className="text-xs text-slate-400 text-center">
-            Paiement sécurisé · 100% reversé au patient · 0% de frais
+            {t('donate_footer')}
           </p>
         </form>
       </div>

@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Heart, Mail, Lock, User, Phone, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
 import { authAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
+import { useLang, useTranslation } from '../utils/i18n.jsx';
 
 const AuthPage = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('login'); // 'login' ou 'register'
+  const { lang } = useLang();
+  const { t } = useTranslation(lang);
+  const [activeTab, setActiveTab] = useState('login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -34,7 +37,7 @@ const AuthPage = () => {
 
     try {
       const response = await authAPI.login(loginData);
-      setSuccess('Connexion réussie ! Redirection...');
+      setSuccess(t('auth_success_login'));
       
       // Récupérer les infos de l'utilisateur
       const user = await authAPI.getCurrentUser();
@@ -65,7 +68,7 @@ const AuthPage = () => {
 
     try {
       await authAPI.register(registerData);
-      setSuccess('Inscription réussie ! Vous pouvez maintenant vous connecter.');
+      setSuccess(t('auth_success_register'));
       
       // Basculer vers l'onglet login après 2 secondes
       setTimeout(() => {
@@ -98,7 +101,7 @@ const AuthPage = () => {
           <h1 className="text-3xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-2">
             JAPPOO FAJU
           </h1>
-          <p className="text-slate-600">Solidarité santé instantanée</p>
+          <p className="text-slate-600">{t('auth_subtitle')}</p>
         </div>
 
         {/* Carte d'authentification */}
@@ -113,7 +116,7 @@ const AuthPage = () => {
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              Connexion
+              {t('auth_tab_login')}
             </button>
             <button
               onClick={() => setActiveTab('register')}
@@ -123,7 +126,7 @@ const AuthPage = () => {
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              Inscription
+              {t('auth_tab_register')}
             </button>
           </div>
 
@@ -148,7 +151,7 @@ const AuthPage = () => {
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Email
+                    {t('auth_label_email')}
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
@@ -165,7 +168,7 @@ const AuthPage = () => {
 
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Mot de passe
+                    {t('auth_label_password')}
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
@@ -186,10 +189,10 @@ const AuthPage = () => {
                   className="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl hover:shadow-xl hover:shadow-blue-500/30 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                 >
                   {loading ? (
-                    <span>Connexion...</span>
+                    <span>{t('auth_login_loading')}</span>
                   ) : (
                     <>
-                      <span>Se connecter</span>
+                      <span>{t('auth_login_btn')}</span>
                       <ArrowRight size={20} />
                     </>
                   )}
@@ -202,7 +205,7 @@ const AuthPage = () => {
               <form onSubmit={handleRegister} className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Nom complet
+                    {t('auth_label_name')}
                   </label>
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
@@ -219,7 +222,7 @@ const AuthPage = () => {
 
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Email
+                    {t('auth_label_email')}
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
@@ -236,7 +239,7 @@ const AuthPage = () => {
 
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Téléphone
+                    {t('auth_label_phone')}
                   </label>
                   <div className="relative">
                     <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
@@ -253,7 +256,7 @@ const AuthPage = () => {
 
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Mot de passe
+                    {t('auth_label_password')}
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
@@ -267,12 +270,12 @@ const AuthPage = () => {
                       placeholder="••••••••"
                     />
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">Minimum 8 caractères</p>
+                  <p className="text-xs text-slate-500 mt-1">{t('auth_password_hint')}</p>
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Vous êtes ?
+                    {t('auth_label_role')}
                   </label>
                   <div className="grid grid-cols-2 gap-3">
                     <button
@@ -285,7 +288,7 @@ const AuthPage = () => {
                       }`}
                     >
                       <Heart className="mx-auto mb-2" size={24} />
-                      <p className="font-semibold">Donateur</p>
+                      <p className="font-semibold">{t('auth_role_donor')}</p>
                     </button>
                     <button
                       type="button"
@@ -297,7 +300,7 @@ const AuthPage = () => {
                       }`}
                     >
                       <User className="mx-auto mb-2" size={24} />
-                      <p className="font-semibold">Hôpital</p>
+                      <p className="font-semibold">{t('auth_role_hospital')}</p>
                     </button>
                   </div>
                 </div>
@@ -308,10 +311,10 @@ const AuthPage = () => {
                   className="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl hover:shadow-xl hover:shadow-blue-500/30 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                 >
                   {loading ? (
-                    <span>Inscription...</span>
+                    <span>{t('auth_register_loading')}</span>
                   ) : (
                     <>
-                      <span>Créer mon compte</span>
+                      <span>{t('auth_register_btn')}</span>
                       <ArrowRight size={20} />
                     </>
                   )}
@@ -327,7 +330,7 @@ const AuthPage = () => {
             href="/"
             className="text-slate-600 hover:text-blue-600 transition-colors font-medium"
           >
-            ← Retour à l'accueil
+            {t('auth_back')}
           </a>
         </div>
       </div>
