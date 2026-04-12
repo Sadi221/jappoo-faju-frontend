@@ -160,8 +160,10 @@ const AuthPage = () => {
                       required
                       value={loginData.email}
                       onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                      onInvalid={(e) => e.target.setCustomValidity(t('auth_required'))}
+                      onInput={(e) => e.target.setCustomValidity('')}
                       className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="votre@email.com"
+                      placeholder={t('auth_placeholder_email')}
                     />
                   </div>
                 </div>
@@ -177,6 +179,8 @@ const AuthPage = () => {
                       required
                       value={loginData.password}
                       onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                      onInvalid={(e) => e.target.setCustomValidity(t('auth_required'))}
+                      onInput={(e) => e.target.setCustomValidity('')}
                       className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       placeholder="••••••••"
                     />
@@ -214,8 +218,10 @@ const AuthPage = () => {
                       required
                       value={registerData.full_name}
                       onChange={(e) => setRegisterData({ ...registerData, full_name: e.target.value })}
+                      onInvalid={(e) => e.target.setCustomValidity(t('auth_required'))}
+                      onInput={(e) => e.target.setCustomValidity('')}
                       className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="Amadou Diallo"
+                      placeholder={t('auth_placeholder_name')}
                     />
                   </div>
                 </div>
@@ -231,8 +237,10 @@ const AuthPage = () => {
                       required
                       value={registerData.email}
                       onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                      onInvalid={(e) => e.target.setCustomValidity(t('auth_required'))}
+                      onInput={(e) => e.target.setCustomValidity('')}
                       className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="votre@email.com"
+                      placeholder={t('auth_placeholder_email')}
                     />
                   </div>
                 </div>
@@ -248,8 +256,10 @@ const AuthPage = () => {
                       required
                       value={registerData.phone_number}
                       onChange={(e) => setRegisterData({ ...registerData, phone_number: e.target.value })}
+                      onInvalid={(e) => e.target.setCustomValidity(t('auth_required'))}
+                      onInput={(e) => e.target.setCustomValidity('')}
                       className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="+221 77 123 45 67"
+                      placeholder={t('auth_placeholder_phone')}
                     />
                   </div>
                 </div>
@@ -266,6 +276,8 @@ const AuthPage = () => {
                       minLength={8}
                       value={registerData.password}
                       onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                      onInvalid={(e) => e.target.setCustomValidity(t('auth_required'))}
+                      onInput={(e) => e.target.setCustomValidity('')}
                       className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       placeholder="••••••••"
                     />

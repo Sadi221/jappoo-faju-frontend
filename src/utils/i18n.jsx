@@ -112,6 +112,10 @@ export const translations = {
     auth_back: '← Retour à l\'accueil',
     auth_success_login: 'Connexion réussie ! Redirection...',
     auth_success_register: 'Inscription réussie ! Vous pouvez maintenant vous connecter.',
+    auth_placeholder_email: 'votre@email.com',
+    auth_placeholder_name: 'Amadou Diallo',
+    auth_placeholder_phone: '+221 77 123 45 67',
+    auth_required: 'Veuillez renseigner ce champ.',
 
     // Donation modal
     donate_title: 'Faire un don',
@@ -272,6 +276,10 @@ export const translations = {
     auth_back: '← Back to home',
     auth_success_login: 'Login successful! Redirecting...',
     auth_success_register: 'Account created! You can now sign in.',
+    auth_placeholder_email: 'your@email.com',
+    auth_placeholder_name: 'John Doe',
+    auth_placeholder_phone: '+221 77 123 45 67',
+    auth_required: 'Please fill in this field.',
 
     // Donation modal
     donate_title: 'Make a donation',
