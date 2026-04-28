@@ -125,9 +125,9 @@ const LandingPage = () => {
   };
 
   const stats = [
-    { value: "15,000", labelKey: "hero_stat_patients", icon: Heart },
-    { value: "100%", labelKey: "hero_stat_hospitals", icon: Shield },
-    { value: "50,000", labelKey: "hero_stat_donors", icon: Users }
+    { value: "2", labelKey: "hero_stat_hospitals", icon: Shield },
+    { value: "500+", labelKey: "hero_stat_patients", icon: Heart },
+    { value: "1,000+", labelKey: "hero_stat_donors", icon: Users }
   ];
 
   const howItWorks = [
