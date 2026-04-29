@@ -51,6 +51,13 @@ export const authAPI = {
     return response.data;
   },
 
+  changePassword: async (currentPassword, newPassword) => {
+  const response = await api.patch(
+    `/auth/change-password?current_password=${encodeURIComponent(currentPassword)}&new_password=${encodeURIComponent(newPassword)}`
+  );
+  return response.data;
+},
+
   // Déconnexion
   logout: () => {
     localStorage.removeItem('token');
