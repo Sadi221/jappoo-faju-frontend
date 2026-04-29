@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Search, LogOut, User, AlertCircle, History, List, ExternalLink } from 'lucide-react';
+import { Heart, Search, LogOut, User, AlertCircle, History, List, ExternalLink, Eye, EyeOff, Lock } from 'lucide-react';
 import { medicalRequestsAPI, paymentsAPI, authAPI } from '../services/api';
 import { useNavigate, Link } from 'react-router-dom';
 import DonationModal from './DonationModal';
 import { MEDICAL_NEED_LABELS, URGENCY_LABELS, DONATION_STATUS_LABELS, t } from '../utils/translations';
-import { useState } from 'react'; // déjà présent normalement
-import { Eye, EyeOff, Lock } from 'lucide-react'; // ajouter Eye, EyeOff, Lock si pas déjà là
 
 const URGENCY_COLORS = {
   CRITICAL: { bar: 'bg-red-500', badge: 'bg-red-100 text-red-700' },
