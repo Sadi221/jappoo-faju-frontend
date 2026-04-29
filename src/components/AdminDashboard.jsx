@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, LogOut, User, CheckCircle, XCircle, AlertTriangle, TrendingUp, Clock, Ban, Building2, CalendarClock } from 'lucide-react';
-import { medicalRequestsAPI, authAPI, hospitalsAPI } from '../services/api';
+import { Heart, LogOut, User, CheckCircle, XCircle, AlertTriangle, TrendingUp, Clock, Ban, Building2, CalendarClock, Eye, EyeOff, Lock } from 'lucide-react';import { medicalRequestsAPI, authAPI, hospitalsAPI } from '../services/api';
 import { MEDICAL_NEED_LABELS, URGENCY_LABELS, t } from '../utils/translations';
 import { useNavigate } from 'react-router-dom';
 
@@ -15,6 +14,41 @@ const AdminDashboard = () => {
   const [showExtend, setShowExtend] = useState(null); // { id, patient_pseudonym }
   const [extendDate, setExtendDate] = useState('');
   const [activeTab, setActiveTab] = useState('PENDING');
+const [showPasswordModal, setShowPasswordModal] = useState(false);
+const [passwordData, setPasswordData] = useState({ current: '', next: '', confirm: '' });
+const [passwordLoading, setPasswordLoading] = useState(false);
+const [passwordError, setPasswordError] = useState('');
+const [passwordSuccess, setPasswordSuccess] = useState('');
+const [showCurrent, setShowCurrent] = useState(false);
+const [showNew, setShowNew] = useState(false);
+
+const handleChangePassword = async (e) => {
+  e.preventDefault();
+  setPasswordError('');
+  setPasswordSuccess('');
+  if (passwordData.next !== passwordData.confirm) {
+    setPasswordError('Les nouveaux mots de passe ne correspondent pas');
+    return;
+  }
+  if (passwordData.next.length < 8) {
+    setPasswordError('Le nouveau mot de passe doit contenir au moins 8 caractères');
+    return;
+  }
+  setPasswordLoading(true);
+  try {
+    await authAPI.changePassword(passwordData.current, passwordData.next);
+    setPasswordSuccess('Mot de passe modifié avec succès !');
+    setTimeout(() => {
+      setShowPasswordModal(false);
+      setPasswordData({ current: '', next: '', confirm: '' });
+      setPasswordSuccess('');
+    }, 2000);
+  } catch (err) {
+    setPasswordError(err.response?.data?.detail || 'Erreur lors du changement de mot de passe');
+  } finally {
+    setPasswordLoading(false);
+  }
+};
 
   // Charger l'utilisateur connecté
   useEffect(() => {
@@ -475,6 +509,120 @@ const AdminDashboard = () => {
         </div>
       )}
 
+      {/* Bouton changement mot de passe */}
+      <div className="max-w-4xl mx-auto px-4 pb-8 text-center">
+        <button
+          onClick={() => setShowPasswordModal(true)}
+          className="text-slate-500 hover:text-blue-600 text-sm font-medium transition-colors flex items-center gap-2 mx-auto"
+        >
+          <Lock size={16} />
+          Modifier mon mot de passe
+        </button>
+      </div>
+
+      {passwordError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+          {passwordError}
+        </div>
+      )}
+      {passwordSuccess && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm">
+          {passwordSuccess}
+        </div>
+      )}
+
+      {/* Modal changement mot de passe */}
+{showPasswordModal && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+      <h2 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
+        <Lock size={20} className="text-blue-600" />
+        Modifier mon mot de passe
+      </h2>
+      {passwordError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+          {passwordError}
+        </div>
+      )}
+      {passwordSuccess && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm">
+          {passwordSuccess}
+        </div>
+      )}
+      <form onSubmit={handleChangePassword} className="space-y-4">
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-2">Mot de passe actuel</label>
+          <div className="relative">
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input
+              type={showCurrent ? 'text' : 'password'}
+              required
+              value={passwordData.current}
+              onChange={(e) => setPasswordData({ ...passwordData, current: e.target.value })}
+              className="w-full pl-11 pr-12 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="••••••••"
+            />
+            <button type="button" onClick={() => setShowCurrent(!showCurrent)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-2">Nouveau mot de passe</label>
+          <div className="relative">
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input
+              type={showNew ? 'text' : 'password'}
+              required
+              minLength={8}
+              value={passwordData.next}
+              onChange={(e) => setPasswordData({ ...passwordData, next: e.target.value })}
+              className="w-full pl-11 pr-12 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="••••••••"
+            />
+            <button type="button" onClick={() => setShowNew(!showNew)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">Minimum 8 caractères</p>
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-2">Confirmer le nouveau mot de passe</label>
+          <div className="relative">
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input
+              type="password"
+              required
+              value={passwordData.confirm}
+              onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}
+              className="w-full pl-11 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="••••••••"
+            />
+          </div>
+        </div>
+        <div className="flex gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => { setShowPasswordModal(false); setPasswordError(''); setPasswordData({ current: '', next: '', confirm: '' }); }}
+            className="flex-1 py-3 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition-all"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            disabled={passwordLoading}
+            className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
+          >
+            {passwordLoading ? 'Modification...' : 'Modifier'}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
+
       {/* Modal de confirmation */}
       {showConfirm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6">
@@ -522,6 +670,7 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };
