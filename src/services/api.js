@@ -53,6 +53,11 @@ export const authAPI = {
   const response = await api.post(`/auth/reset-password?token=${encodeURIComponent(token)}&new_password=${encodeURIComponent(newPassword)}`);
   return response.data;
   },
+  getUsers: async (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  const response = await api.get(`/admin/users${query ? '?' + query : ''}`);
+  return response.data;
+},
 
   // Récupérer l'utilisateur connecté
   getCurrentUser: async () => {

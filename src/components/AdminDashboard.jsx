@@ -8,6 +8,7 @@ const AdminDashboard = () => {
   const [user, setUser] = useState(null);
   const [allRequests, setAllRequests] = useState([]);
   const [hospitals, setHospitals] = useState([]);
+  const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
   const [showConfirm, setShowConfirm] = useState(null);
@@ -73,12 +74,14 @@ const handleChangePassword = async (e) => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [requestsData, hospitalsData] = await Promise.all([
+        const [requestsData, hospitalsData, agentsData] = await Promise.all([
           medicalRequestsAPI.getAll({ status: 'ALL', limit: 100 }),
           hospitalsAPI.getAll(),
-        ]);
+          authAPI.getUsers({ role: 'HOSPITAL_AGENT' }),
+      ] );
         setAllRequests(requestsData);
         setHospitals(hospitalsData);
+        setAgents(agentsData.users || []);
       } catch (err) {
         console.error('Erreur lors du chargement:', err);
       } finally {
@@ -264,6 +267,7 @@ const handleChangePassword = async (e) => {
             { key: 'COMPLETED', label: 'Complétées', count: stats.completed, color: 'blue' },
             { key: 'REJECTED', label: 'Rejetées', count: stats.rejected, color: 'red' },
             { key: 'HOSPITALS', label: 'Hôpitaux', count: hospitals.length, color: 'purple' },
+            { key: 'AGENTS', label: 'Agents', count: agents.length, color: 'indigo' },
           ].map(({ key, label, count, color }) => (
             <button
               key={key}
@@ -408,6 +412,46 @@ const handleChangePassword = async (e) => {
           )}
         </div>
       </div>
+
+{/* Section agents */}
+{activeTab === 'AGENTS' && (
+  <div className="max-w-7xl mx-auto px-6 pb-8">
+    <h2 className="text-2xl font-black text-slate-800 mb-6">
+      Agents hospitaliers ({agents.length})
+    </h2>
+    {agents.length === 0 ? (
+      <div className="text-center py-16 bg-white rounded-2xl shadow-lg">
+        <User className="mx-auto mb-4 text-slate-400" size={64} />
+        <p className="text-slate-600">Aucun agent enregistré</p>
+      </div>
+    ) : (
+      <div className="grid md:grid-cols-2 gap-6">
+        {agents.map((agent) => (
+          <div key={agent.id} className="bg-white rounded-2xl p-6 shadow-lg border-2 border-slate-100">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <User size={20} className="text-indigo-600" />
+                  <h3 className="text-lg font-bold text-slate-800">{agent.full_name}</h3>
+                </div>
+                <p className="text-sm text-slate-500">{agent.email}</p>
+                <p className="text-sm text-slate-500">{agent.phone_number}</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Inscrit le {new Date(agent.created_at).toLocaleDateString('fr-FR')}
+                </p>
+              </div>
+              <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${
+                agent.is_verified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+              }`}>
+                {agent.is_verified ? '✓ Vérifié' : 'En attente'}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+)}
 
       {/* Section hôpitaux */}
       {activeTab === 'HOSPITALS' && (
