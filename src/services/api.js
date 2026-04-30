@@ -55,7 +55,11 @@ export const authAPI = {
   },
   getUsers: async (params = {}) => {
   const query = new URLSearchParams(params).toString();
-  const response = await api.get(`/admin/users${query ? '?' + query : ''}`);
+  const token = localStorage.getItem('token');
+  const response = await axios.get(
+    `${API_BASE_URL}/admin/users${query ? '?' + query : ''}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
   return response.data;
 },
 
