@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Heart, Mail, Lock, User, Phone, ArrowRight, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { authAPI } from '../services/api';
-import { useNavigate } from 'react-router-dom';
 import { useLang, useTranslation } from '../utils/i18n.jsx';
+import { useNavigate, Link } from 'react-router-dom';
 
 const AuthPage = () => {
   const navigate = useNavigate();
