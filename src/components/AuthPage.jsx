@@ -178,6 +178,12 @@ const AuthPage = () => {
                   </div>
                 </div>
 
+                <div className="text-right">
+                  <Link to="/mot-de-passe-oublie" className="text-sm text-blue-600 hover:underline font-medium">
+                    Mot de passe oublié ?
+                  </Link>
+                </div>
+
                 <button
                   type="submit"
                   disabled={loading}

@@ -8,6 +8,8 @@ import RequestDetailPage from './components/RequestDetailPage';
 import PrivacyPolicyPage from './components/PrivacyPolicyPage';
 import PaymentStatusPage from './components/PaymentStatusPage';
 import { LangProvider } from './utils/i18n.jsx';
+import ForgotPasswordPage from './components/ForgotPasswordPage';
+import ResetPasswordPage from './components/ResetPasswordPage';
 
 function App() {
   console.log('🔍 VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
@@ -26,6 +28,8 @@ function App() {
         <Route path="/politique-de-confidentialite" element={<PrivacyPolicyPage />} />
         <Route path="/paiement/succes" element={<PaymentStatusPage status="success" />} />
         <Route path="/paiement/annule" element={<PaymentStatusPage status="cancelled" />} />
+        <Route path="/mot-de-passe-oublie" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
       </Routes>
     </Router>
     </LangProvider>
