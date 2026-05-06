@@ -45,13 +45,13 @@ export const authAPI = {
     return response.data;
   },
   forgotPassword: async (email) => {
-  const response = await api.post(`/auth/forgot-password?email=${encodeURIComponent(email)}`);
-  return response.data;
+    const response = await api.post('/auth/forgot-password', { email });
+    return response.data;
   },
 
   resetPassword: async (token, newPassword) => {
-  const response = await api.post(`/auth/reset-password?token=${encodeURIComponent(token)}&new_password=${encodeURIComponent(newPassword)}`);
-  return response.data;
+    const response = await api.post('/auth/reset-password', { token, new_password: newPassword });
+    return response.data;
   },
   getUsers: async (params = {}) => {
   const query = new URLSearchParams(params).toString();
@@ -70,11 +70,12 @@ export const authAPI = {
   },
 
   changePassword: async (currentPassword, newPassword) => {
-  const response = await api.patch(
-    `/auth/change-password?current_password=${encodeURIComponent(currentPassword)}&new_password=${encodeURIComponent(newPassword)}`
-  );
-  return response.data;
-},
+    const response = await api.patch('/auth/change-password', {
+      current_password: currentPassword,
+      new_password: newPassword,
+    });
+    return response.data;
+  },
 
   // Déconnexion
   logout: () => {
