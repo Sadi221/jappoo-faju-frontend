@@ -3,8 +3,6 @@ import axios from 'axios';
 // ========== CONFIGURATION API URL ==========
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://jappoo-faju-backend-production-b1f1.up.railway.app';
 
-console.log('🔗 API URL:', API_BASE_URL);
-
 // Instance axios configurée
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api`,
