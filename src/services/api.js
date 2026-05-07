@@ -11,16 +11,61 @@ const api = axios.create({
   }
 });
 
-// Intercepteur pour ajouter le token JWT si disponible
+// Intercepteur requête — injecte le token JWT
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
-  (error) => {
+  (error) => Promise.reject(error)
+);
+
+// Intercepteur réponse — rafraîchit automatiquement l'access token sur 401
+let _isRefreshing = false;
+let _queue = [];
+const _processQueue = (error, token = null) => {
+  _queue.forEach(p => error ? p.reject(error) : p.resolve(token));
+  _queue = [];
+};
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const original = error.config;
+    if (error.response?.status === 401 && !original._retry) {
+      if (_isRefreshing) {
+        return new Promise((resolve, reject) => _queue.push({ resolve, reject }))
+          .then(token => { original.headers.Authorization = `Bearer ${token}`; return api(original); })
+          .catch(err => Promise.reject(err));
+      }
+      original._retry = true;
+      _isRefreshing = true;
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (!refreshToken) {
+        _isRefreshing = false;
+        localStorage.removeItem('token');
+        window.location.href = '/auth';
+        return Promise.reject(error);
+      }
+      try {
+        const resp = await axios.post(`${API_BASE_URL}/api/auth/refresh`, { refresh_token: refreshToken });
+        const { access_token, refresh_token } = resp.data;
+        localStorage.setItem('token', access_token);
+        localStorage.setItem('refresh_token', refresh_token);
+        _processQueue(null, access_token);
+        original.headers.Authorization = `Bearer ${access_token}`;
+        return api(original);
+      } catch (err) {
+        _processQueue(err, null);
+        localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token');
+        window.location.href = '/auth';
+        return Promise.reject(err);
+      } finally {
+        _isRefreshing = false;
+      }
+    }
     return Promise.reject(error);
   }
 );
@@ -39,6 +84,9 @@ export const authAPI = {
     const response = await api.post('/auth/login', credentials);
     if (response.data.access_token) {
       localStorage.setItem('token', response.data.access_token);
+    }
+    if (response.data.refresh_token) {
+      localStorage.setItem('refresh_token', response.data.refresh_token);
     }
     return response.data;
   },
@@ -75,9 +123,14 @@ export const authAPI = {
     return response.data;
   },
 
-  // Déconnexion
-  logout: () => {
+  // Déconnexion (révoque le refresh token côté serveur)
+  logout: async () => {
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (refreshToken) {
+      try { await api.post('/auth/logout', { refresh_token: refreshToken }); } catch {}
+    }
     localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
   },
 };
 
