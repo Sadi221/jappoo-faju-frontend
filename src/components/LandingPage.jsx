@@ -131,24 +131,12 @@ const LandingPage = () => {
   ];
 
   const howItWorks = [
-    {
-      step: "1",
-      titleKey: "how_step1_title",
-      descKey: "how_step1_desc",
-      color: "from-blue-500 to-cyan-500"
-    },
-    {
-      step: "2",
-      titleKey: "how_step2_title",
-      descKey: "how_step2_desc",
-      color: "from-purple-500 to-pink-500"
-    },
-    {
-      step: "3",
-      titleKey: "how_step3_title",
-      descKey: "how_step3_desc",
-      color: "from-orange-500 to-red-500"
-    }
+    { step: "1", icon: "🏥", titleKey: "how_step1_title", descKey: "how_step1_desc", color: "from-blue-500 to-cyan-500" },
+    { step: "2", icon: "✅", titleKey: "how_step2_title", descKey: "how_step2_desc", color: "from-purple-500 to-indigo-500" },
+    { step: "3", icon: "📢", titleKey: "how_step3_title", descKey: "how_step3_desc", color: "from-orange-500 to-amber-500" },
+    { step: "4", icon: "❤️", titleKey: "how_step4_title", descKey: "how_step4_desc", color: "from-red-500 to-pink-500" },
+    { step: "5", icon: "💊", titleKey: "how_step5_title", descKey: "how_step5_desc", color: "from-green-500 to-teal-500" },
+    { step: "6", icon: "📊", titleKey: "how_step6_title", descKey: "how_step6_desc", color: "from-slate-600 to-blue-600" },
   ];
 
   return (
@@ -374,18 +362,17 @@ const LandingPage = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 relative">
-            <div className="hidden md:block absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-blue-200 via-purple-200 to-red-200 -translate-y-1/2 z-0"></div>
-
+          <div className="grid md:grid-cols-3 gap-6">
             {howItWorks.map((item, i) => (
-              <div key={i} className="relative z-10">
-                <div className="bg-white rounded-3xl p-8 shadow-xl border-2 border-blue-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300">
-                  <div className={`w-16 h-16 bg-gradient-to-br ${item.color} rounded-2xl flex items-center justify-center text-white text-3xl font-black mb-6 transform rotate-3`}>
+              <div key={i} className="bg-white rounded-3xl p-7 shadow-xl border-2 border-blue-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className={`w-10 h-10 bg-gradient-to-br ${item.color} rounded-xl flex items-center justify-center text-white text-sm font-black flex-shrink-0 transform rotate-3 shadow-md`}>
                     {item.step}
                   </div>
-                  <h3 className="text-2xl font-bold text-slate-800 mb-4">{tl(item.titleKey)}</h3>
-                  <p className="text-slate-600 leading-relaxed">{tl(item.descKey)}</p>
+                  <span className="text-3xl">{item.icon}</span>
                 </div>
+                <h3 className="text-xl font-bold text-slate-800 mb-3">{tl(item.titleKey)}</h3>
+                <p className="text-slate-600 leading-relaxed text-sm">{tl(item.descKey)}</p>
               </div>
             ))}
           </div>

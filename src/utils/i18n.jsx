@@ -37,12 +37,18 @@ export const translations = {
 
     // How it works
     how_title: 'Comment ça marche ?',
-    how_step1_title: 'Choisissez un cas',
-    how_step1_desc: 'Parcourez les demandes validées par nos équipes médicales partenaires.',
-    how_step2_title: 'Faites un don',
-    how_step2_desc: 'Donnez via Wave, Orange Money ou carte bancaire en quelques secondes.',
-    how_step3_title: 'Sauvez une vie',
-    how_step3_desc: 'Votre don est directement utilisé pour les soins du patient.',
+    how_step1_title: 'Demande médicale',
+    how_step1_desc: "Un patient hospitalisé a besoin d'aide financière. L'hôpital partenaire identifie et soumet la demande.",
+    how_step2_title: 'Validation DSS',
+    how_step2_desc: "Notre équipe examine chaque dossier : urgence médicale, situation financière, hôpital agréé.",
+    how_step3_title: 'Publication',
+    how_step3_desc: "La demande validée est publiée sur Jappoo Faju avec les informations anonymisées du patient.",
+    how_step4_title: 'Votre don',
+    how_step4_desc: "Vous choisissez le patient à soutenir et donnez via Wave, Orange Money ou carte bancaire.",
+    how_step5_title: 'Soins reçus',
+    how_step5_desc: "Le financement est versé directement à l'hôpital. Le patient reçoit les soins nécessaires.",
+    how_step6_title: 'Traçabilité',
+    how_step6_desc: "Vous recevez un reçu vérifié. Chaque don est documenté en temps réel, transparence totale.",
 
     // CTA
     cta_title: 'Rejoignez le mouvement',
@@ -201,12 +207,18 @@ export const translations = {
 
     // How it works
     how_title: 'How does it work?',
-    how_step1_title: 'Choose a case',
-    how_step1_desc: 'Browse requests validated by our partner medical teams.',
-    how_step2_title: 'Make a donation',
-    how_step2_desc: 'Give via Wave, Orange Money or bank card in seconds.',
-    how_step3_title: 'Save a life',
-    how_step3_desc: 'Your donation is directly used for the patient\'s care.',
+    how_step1_title: 'Medical request',
+    how_step1_desc: "A hospitalized patient needs financial help. The partner hospital identifies and submits the request.",
+    how_step2_title: 'DSS Validation',
+    how_step2_desc: "Our team reviews each file: medical urgency, financial situation, accredited hospital.",
+    how_step3_title: 'Publication',
+    how_step3_desc: "The validated request is published on Jappoo Faju with the patient's anonymized information.",
+    how_step4_title: 'Your donation',
+    how_step4_desc: "You choose the patient to support and donate via Wave, Orange Money or bank card.",
+    how_step5_title: 'Care received',
+    how_step5_desc: "Funding is paid directly to the hospital. The patient receives the necessary care.",
+    how_step6_title: 'Traceability',
+    how_step6_desc: "You receive a verified receipt. Each donation is documented in real time for full transparency.",
 
     // CTA
     cta_title: 'Join the movement',
