@@ -14,6 +14,11 @@ const AuthPage = () => {
   const [success, setSuccess] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [registerSuccess, setRegisterSuccess] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSent, setResendSent] = useState(false);
 
   const [loginData, setLoginData] = useState({
     email: '',
@@ -25,7 +30,6 @@ const AuthPage = () => {
     password: '',
     full_name: '',
     phone_number: '',
-    role: 'DONOR',
   });
 
   const handleLogin = async (e) => {
@@ -33,8 +37,10 @@ const AuthPage = () => {
     setLoading(true);
     setError('');
     setSuccess('');
+    setUnverifiedEmail('');
+    setResendSent(false);
     try {
-      const response = await authAPI.login(loginData);
+      await authAPI.login(loginData);
       setSuccess(t('auth_success_login'));
       const user = await authAPI.getCurrentUser();
       setTimeout(() => {
@@ -47,7 +53,12 @@ const AuthPage = () => {
         }
       }, 1500);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Email ou mot de passe incorrect');
+      if (err.response?.status === 403) {
+        setUnverifiedEmail(loginData.email);
+        setError("Votre compte n'est pas encore vérifié. Vérifiez votre boîte email.");
+      } else {
+        setError(err.response?.data?.detail || 'Email ou mot de passe incorrect');
+      }
     } finally {
       setLoading(false);
     }
@@ -60,16 +71,39 @@ const AuthPage = () => {
     setSuccess('');
     try {
       await authAPI.register(registerData);
-      setSuccess(t('auth_success_register'));
-      setTimeout(() => {
-        setActiveTab('login');
-        setLoginData({ email: registerData.email, password: '' });
-      }, 2000);
+      setRegisteredEmail(registerData.email);
+      setRegisterSuccess(true);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erreur lors de l\'inscription');
+      setError(err.response?.data?.detail || "Erreur lors de l'inscription");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleResendFromLogin = async () => {
+    setResendLoading(true);
+    try {
+      await authAPI.resendVerification(unverifiedEmail);
+    } catch {}
+    setResendSent(true);
+    setResendLoading(false);
+  };
+
+  const switchToLogin = () => {
+    setActiveTab('login');
+    setRegisterSuccess(false);
+    setError('');
+    setSuccess('');
+    setUnverifiedEmail('');
+    setResendSent(false);
+  };
+
+  const switchToRegister = () => {
+    setActiveTab('register');
+    setError('');
+    setSuccess('');
+    setUnverifiedEmail('');
+    setResendSent(false);
   };
 
   return (
@@ -95,7 +129,7 @@ const AuthPage = () => {
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-blue-100">
           <div className="flex border-b border-slate-200">
             <button
-              onClick={() => setActiveTab('login')}
+              onClick={switchToLogin}
               className={`flex-1 py-4 font-semibold transition-all ${
                 activeTab === 'login'
                   ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
@@ -105,7 +139,7 @@ const AuthPage = () => {
               {t('auth_tab_login')}
             </button>
             <button
-              onClick={() => setActiveTab('register')}
+              onClick={switchToRegister}
               className={`flex-1 py-4 font-semibold transition-all ${
                 activeTab === 'register'
                   ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
@@ -117,225 +151,233 @@ const AuthPage = () => {
           </div>
 
           <div className="p-8">
-            {error && (
-              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start space-x-3">
-                <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
-                <p className="text-red-700 text-sm">{error}</p>
-              </div>
-            )}
-            {success && (
-              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl flex items-start space-x-3">
-                <CheckCircle className="text-green-600 flex-shrink-0 mt-0.5" size={20} />
-                <p className="text-green-700 text-sm">{success}</p>
-              </div>
-            )}
-
-            {/* Formulaire de connexion */}
-            {activeTab === 'login' && (
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    {t('auth_label_email')}
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
-                    <input
-                      type="email"
-                      required
-                      value={loginData.email}
-                      onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                      onInvalid={(e) => e.target.setCustomValidity(t('auth_required'))}
-                      onInput={(e) => e.target.setCustomValidity('')}
-                      className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder={t('auth_placeholder_email')}
-                    />
-                  </div>
+            {registerSuccess ? (
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                  <Mail className="text-green-600" size={32} />
                 </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    {t('auth_label_password')}
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
-                    <input
-                      type={showLoginPassword ? 'text' : 'password'}
-                      required
-                      value={loginData.password}
-                      onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                      onInvalid={(e) => e.target.setCustomValidity(t('auth_required'))}
-                      onInput={(e) => e.target.setCustomValidity('')}
-                      className="w-full pl-12 pr-12 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="••••••••"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowLoginPassword(!showLoginPassword)}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                    >
-                      {showLoginPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <Link to="/mot-de-passe-oublie" className="text-sm text-blue-600 hover:underline font-medium">
-                    Mot de passe oublié ?
-                  </Link>
-                </div>
-
+                <h2 className="text-xl font-black text-slate-800 mb-2">Vérifiez votre boîte email</h2>
+                <p className="text-slate-600 mb-2">Un lien de confirmation a été envoyé à :</p>
+                <p className="font-semibold text-blue-600 mb-4">{registeredEmail}</p>
+                <p className="text-sm text-slate-500 mb-6">
+                  Cliquez sur le lien dans l'email pour activer votre compte. Vérifiez aussi vos spams.
+                </p>
                 <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl hover:shadow-xl hover:shadow-blue-500/30 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                  onClick={() => {
+                    switchToLogin();
+                    setLoginData({ email: registeredEmail, password: '' });
+                  }}
+                  className="text-sm text-blue-600 hover:underline font-medium"
                 >
-                  {loading ? (
-                    <span>{t('auth_login_loading')}</span>
-                  ) : (
-                    <>
-                      <span>{t('auth_login_btn')}</span>
-                      <ArrowRight size={20} />
-                    </>
-                  )}
+                  Retour à la connexion
                 </button>
-              </form>
-            )}
-
-            {/* Formulaire d'inscription */}
-            {activeTab === 'register' && (
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    {t('auth_label_name')}
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
-                    <input
-                      type="text"
-                      required
-                      value={registerData.full_name}
-                      onChange={(e) => setRegisterData({ ...registerData, full_name: e.target.value })}
-                      onInvalid={(e) => e.target.setCustomValidity(t('auth_required'))}
-                      onInput={(e) => e.target.setCustomValidity('')}
-                      className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder={t('auth_placeholder_name')}
-                    />
+              </div>
+            ) : (
+              <>
+                {error && (
+                  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+                    <div className="flex items-start space-x-3">
+                      <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
+                      <p className="text-red-700 text-sm">{error}</p>
+                    </div>
+                    {unverifiedEmail && (
+                      <div className="mt-3 pl-7">
+                        {resendSent ? (
+                          <p className="text-sm text-green-700">Lien renvoyé ! Vérifiez votre boîte email.</p>
+                        ) : (
+                          <button
+                            onClick={handleResendFromLogin}
+                            disabled={resendLoading}
+                            className="text-sm text-blue-600 hover:underline font-medium disabled:opacity-50"
+                          >
+                            {resendLoading ? 'Envoi...' : 'Renvoyer le lien de vérification'}
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    {t('auth_label_email')}
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
-                    <input
-                      type="email"
-                      required
-                      value={registerData.email}
-                      onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-                      onInvalid={(e) => e.target.setCustomValidity(t('auth_required'))}
-                      onInput={(e) => e.target.setCustomValidity('')}
-                      className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder={t('auth_placeholder_email')}
-                    />
+                )}
+                {success && (
+                  <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl flex items-start space-x-3">
+                    <CheckCircle className="text-green-600 flex-shrink-0 mt-0.5" size={20} />
+                    <p className="text-green-700 text-sm">{success}</p>
                   </div>
-                </div>
+                )}
 
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    {t('auth_label_phone')}
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
-                    <input
-                      type="tel"
-                      required
-                      value={registerData.phone_number}
-                      onChange={(e) => setRegisterData({ ...registerData, phone_number: e.target.value })}
-                      onInvalid={(e) => e.target.setCustomValidity(t('auth_required'))}
-                      onInput={(e) => e.target.setCustomValidity('')}
-                      className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder={t('auth_placeholder_phone')}
-                    />
-                  </div>
-                </div>
+                {activeTab === 'login' && (
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        {t('auth_label_email')}
+                      </label>
+                      <div className="relative">
+                        <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
+                        <input
+                          type="email"
+                          required
+                          value={loginData.email}
+                          onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                          onInvalid={(e) => e.target.setCustomValidity(t('auth_required'))}
+                          onInput={(e) => e.target.setCustomValidity('')}
+                          className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          placeholder={t('auth_placeholder_email')}
+                        />
+                      </div>
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    {t('auth_label_password')}
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
-                    <input
-                      type={showRegisterPassword ? 'text' : 'password'}
-                      required
-                      minLength={8}
-                      value={registerData.password}
-                      onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                      onInvalid={(e) => e.target.setCustomValidity(t('auth_required'))}
-                      onInput={(e) => e.target.setCustomValidity('')}
-                      className="w-full pl-12 pr-12 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="••••••••"
-                    />
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        {t('auth_label_password')}
+                      </label>
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
+                        <input
+                          type={showLoginPassword ? 'text' : 'password'}
+                          required
+                          value={loginData.password}
+                          onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                          onInvalid={(e) => e.target.setCustomValidity(t('auth_required'))}
+                          onInput={(e) => e.target.setCustomValidity('')}
+                          className="w-full pl-12 pr-12 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          placeholder="••••••••"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowLoginPassword(!showLoginPassword)}
+                          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                        >
+                          {showLoginPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <Link to="/mot-de-passe-oublie" className="text-sm text-blue-600 hover:underline font-medium">
+                        Mot de passe oublié ?
+                      </Link>
+                    </div>
+
                     <button
-                      type="button"
-                      onClick={() => setShowRegisterPassword(!showRegisterPassword)}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                      type="submit"
+                      disabled={loading}
+                      className="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl hover:shadow-xl hover:shadow-blue-500/30 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                     >
-                      {showRegisterPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      {loading ? (
+                        <span>{t('auth_login_loading')}</span>
+                      ) : (
+                        <>
+                          <span>{t('auth_login_btn')}</span>
+                          <ArrowRight size={20} />
+                        </>
+                      )}
                     </button>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1">{t('auth_password_hint')}</p>
-                </div>
+                  </form>
+                )}
 
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    {t('auth_label_role')}
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setRegisterData({ ...registerData, role: 'DONOR' })}
-                      className={`p-4 rounded-xl border-2 transition-all ${
-                        registerData.role === 'DONOR'
-                          ? 'border-blue-600 bg-blue-50 text-blue-700'
-                          : 'border-slate-200 hover:border-blue-300'
-                      }`}
-                    >
-                      <Heart className="mx-auto mb-2" size={24} />
-                      <p className="font-semibold">{t('auth_role_donor')}</p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRegisterData({ ...registerData, role: 'HOSPITAL_AGENT' })}
-                      className={`p-4 rounded-xl border-2 transition-all ${
-                        registerData.role === 'HOSPITAL_AGENT'
-                          ? 'border-blue-600 bg-blue-50 text-blue-700'
-                          : 'border-slate-200 hover:border-blue-300'
-                      }`}
-                    >
-                      <User className="mx-auto mb-2" size={24} />
-                      <p className="font-semibold">{t('auth_role_hospital')}</p>
-                    </button>
-                  </div>
-                </div>
+                {activeTab === 'register' && (
+                  <form onSubmit={handleRegister} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        {t('auth_label_name')}
+                      </label>
+                      <div className="relative">
+                        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
+                        <input
+                          type="text"
+                          required
+                          value={registerData.full_name}
+                          onChange={(e) => setRegisterData({ ...registerData, full_name: e.target.value })}
+                          onInvalid={(e) => e.target.setCustomValidity(t('auth_required'))}
+                          onInput={(e) => e.target.setCustomValidity('')}
+                          className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          placeholder={t('auth_placeholder_name')}
+                        />
+                      </div>
+                    </div>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl hover:shadow-xl hover:shadow-blue-500/30 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                >
-                  {loading ? (
-                    <span>{t('auth_register_loading')}</span>
-                  ) : (
-                    <>
-                      <span>{t('auth_register_btn')}</span>
-                      <ArrowRight size={20} />
-                    </>
-                  )}
-                </button>
-              </form>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        {t('auth_label_email')}
+                      </label>
+                      <div className="relative">
+                        <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
+                        <input
+                          type="email"
+                          required
+                          value={registerData.email}
+                          onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                          onInvalid={(e) => e.target.setCustomValidity(t('auth_required'))}
+                          onInput={(e) => e.target.setCustomValidity('')}
+                          className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          placeholder={t('auth_placeholder_email')}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        {t('auth_label_phone')}
+                      </label>
+                      <div className="relative">
+                        <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
+                        <input
+                          type="tel"
+                          required
+                          value={registerData.phone_number}
+                          onChange={(e) => setRegisterData({ ...registerData, phone_number: e.target.value })}
+                          onInvalid={(e) => e.target.setCustomValidity(t('auth_required'))}
+                          onInput={(e) => e.target.setCustomValidity('')}
+                          className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          placeholder={t('auth_placeholder_phone')}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        {t('auth_label_password')}
+                      </label>
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
+                        <input
+                          type={showRegisterPassword ? 'text' : 'password'}
+                          required
+                          minLength={8}
+                          value={registerData.password}
+                          onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                          onInvalid={(e) => e.target.setCustomValidity(t('auth_required'))}
+                          onInput={(e) => e.target.setCustomValidity('')}
+                          className="w-full pl-12 pr-12 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          placeholder="••••••••"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                        >
+                          {showRegisterPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">{t('auth_password_hint')}</p>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl hover:shadow-xl hover:shadow-blue-500/30 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                    >
+                      {loading ? (
+                        <span>{t('auth_register_loading')}</span>
+                      ) : (
+                        <>
+                          <span>{t('auth_register_btn')}</span>
+                          <ArrowRight size={20} />
+                        </>
+                      )}
+                    </button>
+                  </form>
+                )}
+              </>
             )}
           </div>
         </div>

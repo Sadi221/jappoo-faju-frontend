@@ -123,6 +123,16 @@ export const authAPI = {
     return response.data;
   },
 
+  verifyEmail: async (token) => {
+    const response = await api.get(`/auth/verify-email?token=${token}`);
+    return response.data;
+  },
+
+  resendVerification: async (email) => {
+    const response = await api.post('/auth/resend-verification', { email });
+    return response.data;
+  },
+
   // Déconnexion (révoque le refresh token côté serveur)
   logout: async () => {
     const refreshToken = localStorage.getItem('refresh_token');

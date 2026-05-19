@@ -10,6 +10,7 @@ import PaymentStatusPage from './components/PaymentStatusPage';
 import { LangProvider } from './utils/i18n.jsx';
 import ForgotPasswordPage from './components/ForgotPasswordPage';
 import ResetPasswordPage from './components/ResetPasswordPage';
+import EmailVerificationPage from './components/EmailVerificationPage';
 
 function App() {
   console.log('🔍 VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
@@ -30,6 +31,7 @@ function App() {
         <Route path="/paiement/annule" element={<PaymentStatusPage status="cancelled" />} />
         <Route path="/mot-de-passe-oublie" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/verify-email" element={<EmailVerificationPage />} />
       </Routes>
     </Router>
     </LangProvider>
