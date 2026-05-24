@@ -3,7 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Heart, Shield, Users, ChevronRight, ArrowRight, CheckCircle, Clock, TrendingUp } from 'lucide-react';
 import { medicalRequestsAPI } from '../services/api';
 import DonationModal from '../components/DonationModal';
-import { useLang, useTranslation } from '../utils/i18n.jsx';
+import { useLang, useTranslation, useCurrencyRates } from '../utils/i18n.jsx';
+import { formatConversion } from '../utils/currency';
 
 // Composant Logo JAPPOO FAJU
 const JappooFajuLogo = ({ size = 48 }) => (
@@ -50,6 +51,8 @@ const LandingPage = () => {
   const navigate = useNavigate();
   const { lang, switchLang } = useLang();
   const { t: tl } = useTranslation(lang);
+  const { usdRate } = useCurrencyRates();
+  const conv = (fcfa) => formatConversion(fcfa, lang, usdRate);
   const [scrollY, setScrollY] = useState(0);
 
   // Helper: urgency/medical labels via i18n
@@ -271,7 +274,10 @@ const LandingPage = () => {
                     </div>
                     <div className="space-y-3">
                       <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">{Number(featured.amount_raised).toLocaleString()} FCFA {tl('cases_collected')}</span>
+                        <span className="text-slate-600">
+                          {Number(featured.amount_raised).toLocaleString()} FCFA {tl('cases_collected')}
+                          {conv(featured.amount_raised) && <span className="text-slate-400 text-xs ml-1">{conv(featured.amount_raised)}</span>}
+                        </span>
                         <span className="font-bold text-blue-600">{Math.round(pct)}%</span>
                       </div>
                       <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
@@ -279,7 +285,10 @@ const LandingPage = () => {
                              style={{ width: `${pct}%` }}></div>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-slate-500">{tl('cases_goal')} : {Number(featured.amount_needed).toLocaleString()} FCFA</span>
+                        <span className="text-slate-500">
+                          {tl('cases_goal')} : {Number(featured.amount_needed).toLocaleString()} FCFA
+                          {conv(featured.amount_needed) && <span className="text-slate-400 text-xs ml-1">{conv(featured.amount_needed)}</span>}
+                        </span>
                         <span className="text-slate-500">{Number(featured.amount_needed - featured.amount_raised).toLocaleString()} {tl('cases_remaining')}</span>
                       </div>
                     </div>
@@ -478,9 +487,11 @@ const LandingPage = () => {
                       <div className="flex justify-between text-sm">
                         <span className="font-semibold text-blue-600">
                           {case_.amount_raised?.toLocaleString()} FCFA
+                          {conv(case_.amount_raised) && <span className="text-slate-400 font-normal text-xs ml-1">{conv(case_.amount_raised)}</span>}
                         </span>
                         <span className="text-slate-500">
                           sur {case_.amount_needed?.toLocaleString()} FCFA
+                          {conv(case_.amount_needed) && <span className="text-xs ml-1">{conv(case_.amount_needed)}</span>}
                         </span>
                       </div>
                     </div>

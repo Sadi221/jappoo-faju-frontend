@@ -350,7 +350,14 @@ export const useTranslation = (lang) => {
 }
 
 // Contexte global de langue
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
+import { fetchUsdRate } from './currency'
+
+export function useCurrencyRates() {
+  const [usdRate, setUsdRate] = useState(null);
+  useEffect(() => { fetchUsdRate().then(setUsdRate); }, []);
+  return { usdRate };
+}
 
 export const LangContext = createContext('fr')
 

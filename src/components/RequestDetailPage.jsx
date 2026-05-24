@@ -4,6 +4,8 @@ import { Heart, ArrowLeft, AlertTriangle, Calendar, Building2, Share2, CheckCirc
 import { medicalRequestsAPI } from '../services/api';
 import DonationModal from './DonationModal';
 import { MEDICAL_NEED_LABELS, URGENCY_LABELS, REQUEST_STATUS_LABELS, t } from '../utils/translations';
+import { useLang, useCurrencyRates } from '../utils/i18n.jsx';
+import { formatConversion } from '../utils/currency';
 
 const RequestDetailPage = () => {
   const { id } = useParams();
@@ -13,6 +15,9 @@ const RequestDetailPage = () => {
   const [notFound, setNotFound] = useState(false);
   const [showDonation, setShowDonation] = useState(false);
   const [copied, setCopied] = useState(false);
+  const { lang } = useLang();
+  const { usdRate } = useCurrencyRates();
+  const conv = (fcfa) => formatConversion(fcfa, lang, usdRate);
 
   useEffect(() => {
     const fetch = async () => {
@@ -179,6 +184,7 @@ const RequestDetailPage = () => {
                 <div className="flex justify-between text-sm mb-2">
                   <span className="font-bold text-blue-600 text-xl">
                     {Number(request.amount_raised).toLocaleString()} FCFA
+                    {conv(request.amount_raised) && <span className="text-slate-400 font-normal text-sm ml-2">{conv(request.amount_raised)}</span>}
                   </span>
                   <span className="text-slate-500 font-medium">{Math.round(percentage)}%</span>
                 </div>
@@ -190,6 +196,7 @@ const RequestDetailPage = () => {
                 </div>
                 <p className="text-xs text-slate-500">
                   Objectif : {Number(request.amount_needed).toLocaleString()} FCFA
+                  {conv(request.amount_needed) && <span className="ml-1">{conv(request.amount_needed)}</span>}
                 </p>
               </div>
 

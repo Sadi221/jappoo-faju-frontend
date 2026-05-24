@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { X, Heart, Phone, CreditCard, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { paymentsAPI } from '../services/api';
-import { useLang, useTranslation } from '../utils/i18n.jsx';
+import { useLang, useTranslation, useCurrencyRates } from '../utils/i18n.jsx';
+import { formatConversion } from '../utils/currency';
 
 // PayDunya couvre Wave + Orange Money sur la même page de paiement
 const PAYMENT_METHODS = [
@@ -27,6 +28,8 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
   medicalRequest = medicalRequest || request;
   const { lang } = useLang();
   const { t } = useTranslation(lang);
+  const { usdRate } = useCurrencyRates();
+  const conv = (fcfa) => formatConversion(fcfa, lang, usdRate);
 
   const needLabel = (need) => {
     const map = { SURGERY: 'need_surgery', MEDICATION: 'need_medication', EXAM: 'need_exam', KIT: 'need_kit', DIALYSIS: 'need_dialysis' };
@@ -60,7 +63,6 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
   };
 
   const formatAmount = (value) => new Intl.NumberFormat('fr-FR').format(value);
-  const toEur = (fcfa) => (fcfa / 655.957).toFixed(2);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -207,11 +209,17 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-slate-600">{t('donate_goal')} :</span>
-              <span className="font-semibold text-blue-600">{formatAmount(medicalRequest.amount_needed)} FCFA</span>
+              <span className="font-semibold text-blue-600">
+                {formatAmount(medicalRequest.amount_needed)} FCFA
+                {conv(medicalRequest.amount_needed) && <span className="text-slate-400 font-normal ml-1 text-xs">{conv(medicalRequest.amount_needed)}</span>}
+              </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-slate-600">{t('donate_collected')} :</span>
-              <span className="font-semibold text-green-600">{formatAmount(medicalRequest.amount_raised)} FCFA</span>
+              <span className="font-semibold text-green-600">
+                {formatAmount(medicalRequest.amount_raised)} FCFA
+                {conv(medicalRequest.amount_raised) && <span className="text-slate-400 font-normal ml-1 text-xs">{conv(medicalRequest.amount_raised)}</span>}
+              </span>
             </div>
           </div>
 
@@ -224,13 +232,16 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
                   key={value}
                   type="button"
                   onClick={() => handleAmountSelect(value)}
-                  className={`py-3 px-4 rounded-xl font-semibold transition-all ${
+                  className={`py-3 px-2 rounded-xl font-semibold transition-all leading-tight ${
                     amount == value
                       ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
-                  {value >= 1000 ? `${value / 1000}K` : value}
+                  <span className="block">{value >= 1000 ? `${value / 1000}K` : value}</span>
+                  <span className={`block text-xs font-normal mt-0.5 ${amount == value ? 'text-white/70' : 'text-slate-400'}`}>
+                    {conv(value)}
+                  </span>
                 </button>
               ))}
             </div>
@@ -249,8 +260,8 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 font-semibold">FCFA</span>
             </div>
-            {paymentMethod === 'STRIPE' && amount >= 1000 && (
-              <p className="text-xs text-slate-400 mt-1">≈ {toEur(amount)} EUR (taux fixe XOF/EUR)</p>
+            {amount >= 1000 && conv(amount) && (
+              <p className="text-xs text-slate-400 mt-1">{conv(amount)}</p>
             )}
           </div>
 
