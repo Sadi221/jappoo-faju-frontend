@@ -306,7 +306,7 @@ const LandingPage = () => {
                 );
               })() : (
                 <div className="relative bg-white rounded-3xl shadow-2xl p-8 flex items-center justify-center h-64 border border-blue-100">
-                  <p className="text-slate-500 text-center">Aucune demande urgente pour le moment.</p>
+                  <p className="text-slate-500 text-center">{tl('cases_empty')}</p>
                 </div>
               )}
             </div>
@@ -446,7 +446,7 @@ const LandingPage = () => {
               </div>
             ) : urgentCases.length === 0 ? (
               <div className="col-span-3 text-center py-12">
-                <p className="text-slate-600 text-lg">Aucune demande urgente pour le moment.</p>
+                <p className="text-slate-600 text-lg">{tl('cases_empty')}</p>
               </div>
             ) : (
               // ✅ FIX 2 — Utiliser les noms de champs originaux de l'API

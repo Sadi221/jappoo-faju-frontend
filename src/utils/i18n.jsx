@@ -30,6 +30,7 @@ export const translations = {
     cases_goal: 'objectif',
     cases_no_results: 'Aucun cas pour ce filtre.',
     cases_loading: 'Chargement...',
+    cases_empty: 'Aucune demande urgente pour le moment.',
 
     // Impact section
     impact_title: 'Notre impact',
@@ -200,6 +201,7 @@ export const translations = {
     cases_goal: 'goal',
     cases_no_results: 'No cases for this filter.',
     cases_loading: 'Loading...',
+    cases_empty: 'No urgent cases at the moment.',
 
     // Impact section
     impact_title: 'Our impact',
