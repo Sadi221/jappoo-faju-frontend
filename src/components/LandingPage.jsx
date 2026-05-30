@@ -121,10 +121,19 @@ const LandingPage = () => {
     fetchUrgentCases();
   }, []);
 
-  // Fonction pour ouvrir le modal de donation
+  // Ouvrir le modal sur un cas précis (depuis les cards)
   const handleDonateClick = (medicalRequest) => {
     setSelectedRequest(medicalRequest);
     setDonationModalOpen(true);
+  };
+
+  // Boutons généraux (navbar / hero / CTA) : ouvre le modal sur le premier cas ou scroll vers la section
+  const handleGeneralDonateClick = () => {
+    if (urgentCases.length > 0 && urgentCases[0].id) {
+      handleDonateClick(urgentCases[0]);
+    } else {
+      document.getElementById('urgences')?.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   const stats = [
@@ -181,7 +190,7 @@ const LandingPage = () => {
             <button onClick={() => navigate('/auth')} className="px-6 py-2.5 text-blue-600 font-semibold hover:bg-blue-50 rounded-xl transition-all">
               {tl('nav_login')}
             </button>
-            <button onClick={() => navigate('/auth')} className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-xl hover:shadow-blue-500/30 transition-all transform hover:scale-105">
+            <button onClick={handleGeneralDonateClick} className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-xl hover:shadow-blue-500/30 transition-all transform hover:scale-105">
               {tl('hero_cta_donate')}
             </button>
           </div>
@@ -219,7 +228,7 @@ const LandingPage = () => {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <button onClick={() => navigate('/auth')} className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-blue-500/40 transition-all transform hover:scale-105 flex items-center justify-center space-x-2">
+                <button onClick={handleGeneralDonateClick} className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-blue-500/40 transition-all transform hover:scale-105 flex items-center justify-center space-x-2">
                   <Heart size={20} fill="white" />
                   <span>{tl('hero_cta_donate')}</span>
                   <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
@@ -580,7 +589,7 @@ const LandingPage = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
-            <button onClick={() => navigate('/auth')} className="px-10 py-5 bg-white text-blue-600 font-bold text-lg rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105">
+            <button onClick={handleGeneralDonateClick} className="px-10 py-5 bg-white text-blue-600 font-bold text-lg rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105">
               {tl('cta_btn')}
             </button>
             <button onClick={() => navigate('/auth')} className="px-10 py-5 bg-transparent border-2 border-white text-white font-bold text-lg rounded-2xl hover:bg-white/10 transition-all">
@@ -623,7 +632,7 @@ const LandingPage = () => {
               <h4 className="font-bold mb-4">{tl('footer_platform')}</h4>
               <ul className="space-y-2 text-sm text-slate-400">
                 <li><a href="#comment" className="hover:text-white transition-colors">{tl('footer_how')}</a></li>
-                <li><button onClick={() => navigate('/auth')} className="hover:text-white transition-colors text-left">{tl('footer_donate')}</button></li>
+                <li><button onClick={handleGeneralDonateClick} className="hover:text-white transition-colors text-left">{tl('footer_donate')}</button></li>
                 <li><a href="#urgences" className="hover:text-white transition-colors">{tl('footer_cases')}</a></li>
                 <li><a href="#impact" className="hover:text-white transition-colors">{tl('footer_impact')}</a></li>
               </ul>
