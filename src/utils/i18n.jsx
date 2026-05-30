@@ -154,6 +154,8 @@ export const translations = {
     donate_sandbox_title: 'Mode développement (sandbox)',
     donate_sandbox_msg: 'En production, vous seriez redirigé vers',
     donate_sandbox_end: 'pour finaliser le paiement.',
+    donate_guest_section: 'Vos informations (optionnel)',
+    donate_fiscal_hint: 'Votre email vous permettra de recevoir un reçu fiscal.',
 
     // Footer
     footer_platform: 'Plateforme',
@@ -325,6 +327,8 @@ export const translations = {
     donate_sandbox_title: 'Development mode (sandbox)',
     donate_sandbox_msg: 'In production, you would be redirected to',
     donate_sandbox_end: 'to complete the payment.',
+    donate_guest_section: 'Your information (optional)',
+    donate_fiscal_hint: 'Your email will allow you to receive a fiscal receipt.',
 
     // Footer
     footer_platform: 'Platform',

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Heart, Phone, CreditCard, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, Heart, Phone, CreditCard, Loader2, CheckCircle, AlertCircle, User, Mail } from 'lucide-react';
 import { paymentsAPI } from '../services/api';
 import { useLang, useTranslation, useCurrencyRates } from '../utils/i18n.jsx';
 import { formatConversion } from '../utils/currency';
@@ -31,10 +31,14 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
   const { usdRate } = useCurrencyRates();
   const conv = (fcfa) => formatConversion(fcfa, lang, usdRate);
 
+  // Détection guest : pas de token JWT en localStorage
+  const isGuest = !localStorage.getItem('token');
+
   const needLabel = (need) => {
     const map = { SURGERY: 'need_surgery', MEDICATION: 'need_medication', EXAM: 'need_exam', KIT: 'need_kit', DIALYSIS: 'need_dialysis' };
     return t(map[need] || need);
   };
+
   const [amount, setAmount] = useState('');
   const [customAmount, setCustomAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('PAYDUNYA');
@@ -76,11 +80,13 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
     setError(null);
 
     try {
-      // Étape 1 : créer la donation
+      // Étape 1 : créer la donation — donor_name/email persistés en base pour la traçabilité guest
       const donation = await paymentsAPI.createDonation({
         medical_request_id: medicalRequest.id,
         amount: parseFloat(amount),
         payment_method: paymentMethod,
+        donor_name: donorName || undefined,
+        donor_email: donorEmail || undefined,
       });
 
       let paymentResponse;
@@ -302,7 +308,7 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
             )}
           </div>
 
-          {/* Téléphone (optionnel, pré-rempli pour PayDunya) */}
+          {/* Téléphone PayDunya — affiché pour tous (spécifique au paiement mobile) */}
           {paymentMethod === 'PAYDUNYA' && (
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -323,33 +329,45 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
             </div>
           )}
 
-          {/* E-mail */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
-              {t('donate_email_label')} <span className="text-slate-400 font-normal">({t('donate_optional')} — {t('donate_email_hint')})</span>
-            </label>
-            <input
-              type="email"
-              value={donorEmail}
-              onChange={(e) => setDonorEmail(e.target.value)}
-              placeholder="votre@email.com"
-              className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
-            />
-          </div>
+          {/* Infos donateur — uniquement pour les guests (non connectés) */}
+          {isGuest && (
+            <div className="space-y-4 border border-slate-100 rounded-2xl p-4 bg-slate-50/50">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                {t('donate_guest_section')}
+              </p>
 
-          {/* Nom */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
-              {t('donate_name_label')} <span className="text-slate-400 font-normal">({t('donate_optional')})</span>
-            </label>
-            <input
-              type="text"
-              value={donorName}
-              onChange={(e) => setDonorName(e.target.value)}
-              placeholder="Ex : Fatou Diop"
-              className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
-            />
-          </div>
+              {/* Nom */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <User size={13} className="inline mr-1" />
+                  {t('donate_name_label')}
+                </label>
+                <input
+                  type="text"
+                  value={donorName}
+                  onChange={(e) => setDonorName(e.target.value)}
+                  placeholder={lang === 'fr' ? 'Votre nom (optionnel)' : 'Your name (optional)'}
+                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors bg-white"
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <Mail size={13} className="inline mr-1" />
+                  {t('donate_email_label')}
+                </label>
+                <input
+                  type="email"
+                  value={donorEmail}
+                  onChange={(e) => setDonorEmail(e.target.value)}
+                  placeholder={lang === 'fr' ? 'Votre email (optionnel)' : 'Your email (optional)'}
+                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors bg-white"
+                />
+                <p className="text-xs text-slate-400 mt-1.5">{t('donate_fiscal_hint')}</p>
+              </div>
+            </div>
+          )}
 
           {/* Erreur */}
           {error && (
