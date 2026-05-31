@@ -1,8 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Heart, LogOut, User, Plus, FileText, AlertTriangle, CheckCircle, X, ChevronDown, ChevronUp, Users, Upload, Paperclip } from 'lucide-react';
 import { medicalRequestsAPI, authAPI, hospitalsAPI, donationsAPI } from '../services/api';
 import { MEDICAL_NEED_LABELS, URGENCY_LABELS, REQUEST_STATUS_LABELS, DONATION_STATUS_LABELS, t } from '../utils/translations';
 import { useNavigate } from 'react-router-dom';
+
+const EMPTY_FORM = {
+  pseudonym: '',
+  gender: 'M',
+  age_range: '18-40',
+  urgency_level: 'CRITIQUE',
+  care_type: 'MEDICAMENTS',
+  care_type_detail: '',
+  total_cost: '',
+  patient_contribution: '0',
+  third_party_contribution: '0',
+  prescription_ref: '',
+  professional_status: 'ACTIF',
+  income_range: 'LESS_50K',
+  dependents: '0',
+  social_support: [],
+  case_summary: '',
+  expiry_date: '',
+};
+
+const SOCIAL_SUPPORT_OPTIONS = [
+  { value: 'BSF',         label: 'Bourse de Sécurité Familiale (BSF)' },
+  { value: 'PLAN_SESAME', label: 'Plan Sésame (+ 60 ans)' },
+  { value: 'CMU',         label: 'Couverture Maladie Universelle (CMU)' },
+  { value: 'CT',          label: 'Collectivité Territoriale (CT)' },
+  { value: 'DGAS',        label: 'DGAS (Action Sociale)' },
+  { value: 'MUTUELLE',    label: 'Mutuelle de santé' },
+  { value: 'AUCUN',       label: 'Aucune couverture' },
+];
 
 const HospitalDashboard = () => {
   const navigate = useNavigate();
@@ -21,30 +50,27 @@ const HospitalDashboard = () => {
   const [createError, setCreateError] = useState('');
   const [uploadingId, setUploadingId] = useState(null);
   const [uploadError, setUploadError] = useState('');
+  const [formData, setFormData] = useState(EMPTY_FORM);
 
-  // État du formulaire
-  const [formData, setFormData] = useState({
-    patient_pseudonym: '',
-    medical_need: 'SURGERY',
-    description: '',
-    amount_needed: '',
-    urgency_level: 'HIGH',
-    expiry_date: '',
-  });
+  // Montant demandé calculé en temps réel
+  const amountRequested = useMemo(() => {
+    const total = parseFloat(formData.total_cost) || 0;
+    const patient = parseFloat(formData.patient_contribution) || 0;
+    const thirdParty = parseFloat(formData.third_party_contribution) || 0;
+    return Math.max(0, total - patient - thirdParty);
+  }, [formData.total_cost, formData.patient_contribution, formData.third_party_contribution]);
 
-  // Charger l'utilisateur connecté + son hôpital
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const userData = await authAPI.getCurrentUser();
         setUser(userData);
         if (userData.role !== 'HOSPITAL_AGENT') { navigate('/'); return; }
-
         try {
           const h = await hospitalsAPI.getMyHospital();
           setHospital(h);
         } catch {
-          setHospital(null); // Pas encore de profil hôpital
+          setHospital(null);
         }
       } catch (err) {
         console.error('Erreur chargement utilisateur:', err);
@@ -54,7 +80,6 @@ const HospitalDashboard = () => {
     fetchUser();
   }, [navigate]);
 
-  // Charger les demandes filtrées par hôpital de l'agent
   useEffect(() => {
     const fetchRequests = async () => {
       if (!hospital) { setLoading(false); return; }
@@ -71,12 +96,8 @@ const HospitalDashboard = () => {
     if (user) fetchRequests();
   }, [user, hospital]);
 
-  // Charger les dons d'une demande au clic
   const toggleDonations = async (requestId) => {
-    if (expandedRequest === requestId) {
-      setExpandedRequest(null);
-      return;
-    }
+    if (expandedRequest === requestId) { setExpandedRequest(null); return; }
     setExpandedRequest(requestId);
     if (!donationsByRequest[requestId]) {
       try {
@@ -89,13 +110,8 @@ const HospitalDashboard = () => {
     }
   };
 
-  // Gérer la déconnexion
-  const handleLogout = () => {
-    authAPI.logout();
-    navigate('/');
-  };
+  const handleLogout = () => { authAPI.logout(); navigate('/'); };
 
-  // Créer le profil hôpital
   const handleCreateHospital = async (e) => {
     e.preventDefault();
     setHospitalLoading(true);
@@ -110,59 +126,67 @@ const HospitalDashboard = () => {
     }
   };
 
-  // Gérer la soumission du formulaire
+  const toggleSocialSupport = (value) => {
+    setFormData(prev => {
+      const current = prev.social_support;
+      if (current.includes(value)) return { ...prev, social_support: current.filter(v => v !== value) };
+      return { ...prev, social_support: [...current, value] };
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!hospital) { alert("Veuillez d'abord créer votre profil hôpital."); return; }
+    if (amountRequested <= 0) {
+      setCreateError("Le montant demandé doit être supérieur à 0. Vérifiez le coût total et les contributions.");
+      return;
+    }
     setCreateLoading(true);
     setCreateError('');
     setCreateSuccess(false);
 
     try {
-      const requestData = {
+      const payload = {
         hospital_id: hospital.id,
-        patient_pseudonym: formData.patient_pseudonym,
-        medical_need: formData.medical_need,
-        description: formData.description,
-        amount_needed: parseFloat(formData.amount_needed),
+        pseudonym: formData.pseudonym.trim(),
+        gender: formData.gender,
+        age_range: formData.age_range,
         urgency_level: formData.urgency_level,
+        care_type: formData.care_type,
+        care_type_detail: formData.care_type_detail.trim() || undefined,
+        total_cost: parseFloat(formData.total_cost),
+        patient_contribution: parseFloat(formData.patient_contribution) || 0,
+        third_party_contribution: parseFloat(formData.third_party_contribution) || 0,
+        amount_requested: amountRequested,
+        prescription_ref: formData.prescription_ref.trim() || undefined,
+        professional_status: formData.professional_status,
+        income_range: formData.income_range,
+        dependents: formData.dependents,
+        social_support: formData.social_support,
+        case_summary: formData.case_summary.trim(),
         expiry_date: formData.expiry_date ? new Date(formData.expiry_date).toISOString() : null,
       };
 
-      await medicalRequestsAPI.create(requestData);
-      
+      await medicalRequestsAPI.create(payload);
       setCreateSuccess(true);
-      
       setTimeout(() => {
         setShowCreateForm(false);
-        setFormData({
-          patient_pseudonym: '',
-          medical_need: 'SURGERY',
-          description: '',
-          amount_needed: '',
-          urgency_level: 'HIGH',
-          expiry_date: '',
-        });
+        setFormData(EMPTY_FORM);
         setCreateSuccess(false);
         window.location.reload();
       }, 2000);
     } catch (err) {
       console.error('Erreur lors de la création:', err);
-      
       let errorMessage = 'Erreur lors de la création de la demande';
-      
       if (err.response?.data?.detail) {
         if (typeof err.response.data.detail === 'string') {
           errorMessage = err.response.data.detail;
-        } 
-        else if (Array.isArray(err.response.data.detail)) {
+        } else if (Array.isArray(err.response.data.detail)) {
           errorMessage = err.response.data.detail.map(e => e.msg).join(', ');
-        }
-        else {
+        } else {
           errorMessage = JSON.stringify(err.response.data.detail);
         }
       }
-      
       setCreateError(errorMessage);
     } finally {
       setCreateLoading(false);
@@ -175,11 +199,10 @@ const HospitalDashboard = () => {
     setUploadError('');
     try {
       await medicalRequestsAPI.uploadProof(requestId, file);
-      // Rafraîchir la liste pour afficher le nouveau document
       const data = await medicalRequestsAPI.getAll({ status: 'ALL', hospital_id: hospital.id });
       setRequests(data);
     } catch (err) {
-      setUploadError(err.response?.data?.detail || 'Erreur lors de l\'upload');
+      setUploadError(err.response?.data?.detail || "Erreur lors de l'upload");
     } finally {
       setUploadingId(null);
     }
@@ -201,6 +224,10 @@ const HospitalDashboard = () => {
     );
   };
 
+  const inputCls = "w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent";
+  const labelCls = "block text-sm font-semibold text-slate-700 mb-2";
+  const sectionTitleCls = "text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 pb-1 border-b border-slate-100";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50">
       {/* Header */}
@@ -211,23 +238,16 @@ const HospitalDashboard = () => {
               <Heart className="text-white" size={20} fill="white" />
             </div>
             <div>
-              <h1 className="text-xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                JAPPOO FAJU
-              </h1>
+              <h1 className="text-xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">JAPPOO FAJU</h1>
               <p className="text-xs text-slate-500">Dashboard Hôpital</p>
             </div>
           </div>
-
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-3 bg-slate-100 px-4 py-2 rounded-xl">
               <User size={20} className="text-slate-600" />
               <span className="font-semibold text-slate-700">{user?.full_name || 'Chargement...'}</span>
             </div>
-            <button
-              onClick={handleLogout}
-              className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-              title="Déconnexion"
-            >
+            <button onClick={handleLogout} className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all" title="Déconnexion">
               <LogOut size={20} />
             </button>
           </div>
@@ -235,7 +255,6 @@ const HospitalDashboard = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-
         {/* Bandeau profil hôpital */}
         {hospital ? (
           <div className="mb-6 p-4 bg-white rounded-2xl border border-blue-100 shadow-sm flex items-center justify-between">
@@ -257,26 +276,21 @@ const HospitalDashboard = () => {
             <p className="text-yellow-800 font-semibold">
               ⚠️ Vous n'avez pas encore de profil hôpital. Créez-en un pour soumettre des demandes.
             </p>
-            <button
-              onClick={() => setShowHospitalForm(true)}
-              className="ml-4 px-4 py-2 bg-yellow-500 text-white font-semibold rounded-xl hover:bg-yellow-600 transition-all whitespace-nowrap"
-            >
+            <button onClick={() => setShowHospitalForm(true)}
+              className="ml-4 px-4 py-2 bg-yellow-500 text-white font-semibold rounded-xl hover:bg-yellow-600 transition-all whitespace-nowrap">
               Créer mon profil
             </button>
           </div>
         )}
 
-        {/* Bouton créer une demande */}
+        {/* Titre + bouton */}
         <div className="mb-8 flex justify-between items-center">
           <div>
             <h2 className="text-3xl font-black text-slate-800">Mes demandes d'aide</h2>
             <p className="text-slate-600">Gérez les demandes médicales de votre établissement</p>
           </div>
-          <button
-            onClick={() => setShowCreateForm(true)}
-            disabled={!hospital}
-            className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          >
+          <button onClick={() => setShowCreateForm(true)} disabled={!hospital}
+            className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
             <Plus size={20} />
             <span>Nouvelle demande</span>
           </button>
@@ -298,80 +312,62 @@ const HospitalDashboard = () => {
           <div className="text-center py-16 bg-white rounded-2xl shadow-lg">
             <FileText className="mx-auto mb-4 text-slate-400" size={64} />
             <p className="text-slate-600 text-lg mb-4">Aucune demande créée</p>
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700"
-            >
+            <button onClick={() => setShowCreateForm(true)}
+              className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700">
               Créer ma première demande
             </button>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 gap-6">
             {requests.map((request) => {
-              const percentage = (request.amount_raised / request.amount_needed) * 100;
-              
+              const percentage = (request.amount_raised / (request.amount_requested || request.amount_needed || 1)) * 100;
               return (
-                <div
-                  key={request.id}
-                  className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all border border-blue-100"
-                >
+                <div key={request.id} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all border border-blue-100">
                   <div className="p-6 space-y-4">
-                    {/* Header */}
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="text-xl font-bold text-slate-800 mb-1">{t(MEDICAL_NEED_LABELS, request.medical_need)}</h3>
+                        <h3 className="text-xl font-bold text-slate-800 mb-1">
+                          {request.care_type || t(MEDICAL_NEED_LABELS, request.medical_need)}
+                        </h3>
                         <p className="text-sm text-slate-500">{request.patient_pseudonym}</p>
                       </div>
                       {getStatusBadge(request.status)}
                     </div>
 
-                    {/* Description */}
-                    <p className="text-sm text-slate-600 line-clamp-2">{request.description}</p>
+                    <p className="text-sm text-slate-600 line-clamp-2">{request.case_summary || request.description}</p>
 
-                    {/* Progression */}
                     <div className="space-y-2">
                       <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-blue-600 to-cyan-500 rounded-full"
-                          style={{ width: `${Math.min(percentage, 100)}%` }}
-                        ></div>
+                        <div className="h-full bg-gradient-to-r from-blue-600 to-cyan-500 rounded-full"
+                          style={{ width: `${Math.min(percentage, 100)}%` }}></div>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="font-semibold text-blue-600">
                           {request.amount_raised.toLocaleString()} FCFA
                         </span>
-                        <span className="text-slate-500">
-                          {Math.round(percentage)}%
-                        </span>
+                        <span className="text-slate-500">{Math.round(percentage)}%</span>
                       </div>
                       <p className="text-xs text-slate-500">
-                        Objectif: {request.amount_needed.toLocaleString()} FCFA
+                        Objectif : {(request.amount_requested || request.amount_needed || 0).toLocaleString()} FCFA
                       </p>
                     </div>
 
-                    {/* Urgence */}
                     <div className="flex items-center space-x-2 text-sm">
-                      <AlertTriangle
-                        size={16}
-                        className={
-                          request.urgency_level === 'CRITICAL' ? 'text-red-600' :
-                          request.urgency_level === 'HIGH' ? 'text-orange-600' :
-                          request.urgency_level === 'MEDIUM' ? 'text-yellow-600' :
-                          'text-blue-600'
-                        }
-                      />
-                      <span className="text-slate-600">{t(URGENCY_LABELS, request.urgency_level)}</span>
+                      <AlertTriangle size={16} className={
+                        request.urgency_level === 'CRITIQUE' ? 'text-red-600' : 'text-orange-400'
+                      } />
+                      <span className="text-slate-600">
+                        {request.urgency_level === 'CRITIQUE' ? 'Urgence critique' :
+                         request.urgency_level === 'RELATIVE' ? 'Urgence relative' :
+                         t(URGENCY_LABELS, request.urgency_level)}
+                      </span>
                     </div>
 
-                    {/* Document de preuve */}
                     <div className="flex items-center justify-between">
                       {request.proof_document_url ? (
-                        <a
-                          href={`${import.meta.env.VITE_API_BASE_URL || 'https://jappoo-faju-backend-production-b1f1.up.railway.app'}${request.proof_document_url}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
-                        >
+                        <a href={`${import.meta.env.VITE_API_BASE_URL || 'https://jappoo-faju-backend-production-b1f1.up.railway.app'}${request.proof_document_url}`}
+                          target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-sm text-blue-600 hover:underline">
                           <Paperclip size={14} />
                           <span>Document joint</span>
                         </a>
@@ -380,19 +376,13 @@ const HospitalDashboard = () => {
                       )}
                       {['PENDING', 'ACTIVE'].includes(request.status) && (
                         <label className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
-                          uploadingId === request.id
-                            ? 'bg-slate-100 text-slate-400 cursor-wait'
-                            : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                          uploadingId === request.id ? 'bg-slate-100 text-slate-400 cursor-wait' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
                         }`}>
                           <Upload size={13} />
                           <span>{uploadingId === request.id ? 'Upload...' : 'Joindre document'}</span>
-                          <input
-                            type="file"
-                            accept=".pdf,.jpg,.jpeg,.png,.webp"
-                            className="hidden"
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" className="hidden"
                             disabled={uploadingId === request.id}
-                            onChange={e => handleUploadProof(request.id, e.target.files[0])}
-                          />
+                            onChange={e => handleUploadProof(request.id, e.target.files[0])} />
                         </label>
                       )}
                     </div>
@@ -400,11 +390,8 @@ const HospitalDashboard = () => {
                       <p className="text-xs text-red-500">{uploadError}</p>
                     )}
 
-                    {/* Bouton voir les dons */}
-                    <button
-                      onClick={() => toggleDonations(request.id)}
-                      className="w-full flex items-center justify-between px-4 py-2 bg-slate-50 hover:bg-blue-50 rounded-xl transition-all text-sm font-semibold text-slate-600 hover:text-blue-600"
-                    >
+                    <button onClick={() => toggleDonations(request.id)}
+                      className="w-full flex items-center justify-between px-4 py-2 bg-slate-50 hover:bg-blue-50 rounded-xl transition-all text-sm font-semibold text-slate-600 hover:text-blue-600">
                       <div className="flex items-center gap-2">
                         <Users size={16} />
                         <span>Dons reçus</span>
@@ -412,7 +399,6 @@ const HospitalDashboard = () => {
                       {expandedRequest === request.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </button>
 
-                    {/* Liste des dons */}
                     {expandedRequest === request.id && (
                       <div className="border-t border-slate-100 pt-3 space-y-2">
                         {!donationsByRequest[request.id] ? (
@@ -460,33 +446,29 @@ const HospitalDashboard = () => {
             </div>
             <form onSubmit={handleCreateHospital} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Nom de l'établissement</label>
+                <label className={labelCls}>Nom de l'établissement</label>
                 <input required type="text" value={hospitalFormData.name}
                   onChange={e => setHospitalFormData({...hospitalFormData, name: e.target.value})}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Ex: Hôpital Principal de Dakar" />
+                  className={inputCls} placeholder="Ex: Hôpital Principal de Dakar" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Adresse</label>
+                <label className={labelCls}>Adresse</label>
                 <input required type="text" value={hospitalFormData.address}
                   onChange={e => setHospitalFormData({...hospitalFormData, address: e.target.value})}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Ex: Avenue Cheikh Anta Diop, Dakar" />
+                  className={inputCls} placeholder="Ex: Avenue Cheikh Anta Diop, Dakar" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Téléphone</label>
+                  <label className={labelCls}>Téléphone</label>
                   <input required type="tel" value={hospitalFormData.phone}
                     onChange={e => setHospitalFormData({...hospitalFormData, phone: e.target.value})}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="+221 XX XXX XX XX" />
+                    className={inputCls} placeholder="+221 XX XXX XX XX" />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">N° d'enregistrement</label>
+                  <label className={labelCls}>N° d'enregistrement</label>
                   <input required type="text" value={hospitalFormData.registration_number}
                     onChange={e => setHospitalFormData({...hospitalFormData, registration_number: e.target.value})}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Ex: SN-HOP-2024-001" />
+                    className={inputCls} placeholder="Ex: SN-HOP-2024-001" />
                 </div>
               </div>
               <div className="flex gap-3 pt-2">
@@ -504,19 +486,17 @@ const HospitalDashboard = () => {
         </div>
       )}
 
-      {/* Modal de création */}
+      {/* Modal de création de demande */}
       {showCreateForm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center p-6 overflow-y-auto">
           <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl my-8">
             <div className="bg-gradient-to-r from-blue-600 to-cyan-500 p-6 text-white relative">
-              <button
-                onClick={() => setShowCreateForm(false)}
-                className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-xl transition-all"
-              >
+              <button onClick={() => setShowCreateForm(false)}
+                className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-xl transition-all">
                 <X size={20} />
               </button>
-              <h2 className="text-2xl font-bold mb-2">Nouvelle demande d'aide</h2>
-              <p className="text-blue-100">Créez une demande pour un patient nécessitant une aide médicale</p>
+              <h2 className="text-2xl font-bold mb-1">Nouvelle demande d'aide</h2>
+              <p className="text-blue-100 text-sm">Formulaire de demande de prise en charge médicale</p>
             </div>
 
             <div className="p-6">
@@ -534,111 +514,232 @@ const HospitalDashboard = () => {
                     </div>
                   )}
 
+                  {/* ── Section 1 : Patient ── */}
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Pseudonyme du patient
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.patient_pseudonym}
-                      onChange={(e) => setFormData({ ...formData, patient_pseudonym: e.target.value })}
-                      className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Ex: Patient DK-2026-089"
-                    />
-                  </div>
+                    <p className={sectionTitleCls}>1. Identification du patient</p>
+                    <div className="space-y-4">
+                      <div>
+                        <label className={labelCls}>Pseudonyme du patient <span className="text-red-500">*</span></label>
+                        <input type="text" required value={formData.pseudonym}
+                          onChange={e => setFormData({ ...formData, pseudonym: e.target.value })}
+                          className={inputCls} placeholder="Ex: Patient DK-2026-089" minLength={3} maxLength={50} />
+                        <p className="text-xs text-slate-400 mt-1">Identifiant anonymisé — jamais le nom réel</p>
+                      </div>
 
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Type de besoin médical
-                    </label>
-                    <select
-                      required
-                      value={formData.medical_need}
-                      onChange={(e) => setFormData({ ...formData, medical_need: e.target.value })}
-                      className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="SURGERY">Chirurgie</option>
-                      <option value="MEDICATION">Médicaments</option>
-                      <option value="EXAM">Examens médicaux</option>
-                      <option value="KIT">Kit médical</option>
-                    </select>
-                  </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className={labelCls}>Sexe <span className="text-red-500">*</span></label>
+                          <div className="flex gap-3">
+                            {[{ value: 'M', label: 'Masculin' }, { value: 'F', label: 'Féminin' }].map(opt => (
+                              <label key={opt.value} className={`flex-1 flex items-center justify-center gap-2 py-3 border-2 rounded-xl cursor-pointer transition-all font-semibold text-sm ${
+                                formData.gender === opt.value ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:border-blue-300'
+                              }`}>
+                                <input type="radio" name="gender" value={opt.value} checked={formData.gender === opt.value}
+                                  onChange={e => setFormData({ ...formData, gender: e.target.value })} className="sr-only" />
+                                {opt.label}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
 
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Description détaillée
-                    </label>
-                    <textarea
-                      required
-                      rows={4}
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Décrivez la situation médicale et le besoin..."
-                    />
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        Montant nécessaire (FCFA)
-                      </label>
-                      <input
-                        type="number"
-                        required
-                        min="1000"
-                        value={formData.amount_needed}
-                        onChange={(e) => setFormData({ ...formData, amount_needed: e.target.value })}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="500000"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        Niveau d'urgence
-                      </label>
-                      <select
-                        required
-                        value={formData.urgency_level}
-                        onChange={(e) => setFormData({ ...formData, urgency_level: e.target.value })}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="CRITICAL">Critique</option>
-                        <option value="HIGH">Élevé</option>
-                        <option value="MEDIUM">Moyen</option>
-                        <option value="LOW">Faible</option>
-                      </select>
+                        <div>
+                          <label className={labelCls}>Tranche d'âge <span className="text-red-500">*</span></label>
+                          <select required value={formData.age_range}
+                            onChange={e => setFormData({ ...formData, age_range: e.target.value })}
+                            className={inputCls}>
+                            <option value="0-18">Enfant / Adolescent (0–18 ans)</option>
+                            <option value="18-40">Adulte (18–40 ans)</option>
+                            <option value="40-60">Adulte (40–60 ans)</option>
+                            <option value="60+">Sénior (60 ans et plus)</option>
+                          </select>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
+                  {/* ── Section 2 : Soins ── */}
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Date limite (optionnel)
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.expiry_date}
-                      onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
-                      className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                    <p className={sectionTitleCls}>2. Nature des soins</p>
+                    <div className="space-y-4">
+                      <div>
+                        <label className={labelCls}>Niveau d'urgence <span className="text-red-500">*</span></label>
+                        <div className="flex gap-3">
+                          {[
+                            { value: 'CRITIQUE', label: '🔴 Urgence critique', desc: 'Situation qui engage le pronostic vital' },
+                            { value: 'RELATIVE', label: '🟠 Urgence relative', desc: 'Soins nécessaires sans danger immédiat' },
+                          ].map(opt => (
+                            <label key={opt.value} className={`flex-1 p-3 border-2 rounded-xl cursor-pointer transition-all ${
+                              formData.urgency_level === opt.value ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-blue-300'
+                            }`}>
+                              <input type="radio" name="urgency_level" value={opt.value}
+                                checked={formData.urgency_level === opt.value}
+                                onChange={e => setFormData({ ...formData, urgency_level: e.target.value })} className="sr-only" />
+                              <p className="font-semibold text-sm text-slate-800">{opt.label}</p>
+                              <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className={labelCls}>Type de soins <span className="text-red-500">*</span></label>
+                          <select required value={formData.care_type}
+                            onChange={e => setFormData({ ...formData, care_type: e.target.value })}
+                            className={inputCls}>
+                            <option value="MEDICAMENTS">Médicaments</option>
+                            <option value="EXAMENS">Examens médicaux</option>
+                            <option value="IMAGERIE">Imagerie (radio, scanner, IRM…)</option>
+                            <option value="CHIRURGIE">Chirurgie</option>
+                            <option value="CONSOMMABLES">Consommables médicaux</option>
+                            <option value="AUTRE">Autre</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className={labelCls}>Précision (optionnel)</label>
+                          <input type="text" value={formData.care_type_detail}
+                            onChange={e => setFormData({ ...formData, care_type_detail: e.target.value })}
+                            className={inputCls} placeholder="Ex: Dialyse rénale 3x/sem" maxLength={200} />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className={labelCls}>Référence ordonnance / prescription (optionnel)</label>
+                        <input type="text" value={formData.prescription_ref}
+                          onChange={e => setFormData({ ...formData, prescription_ref: e.target.value })}
+                          className={inputCls} placeholder="Ex: ORD-2026-00789" maxLength={100} />
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setShowCreateForm(false)}
-                      className="flex-1 py-3 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition-all"
-                    >
+                  {/* ── Section 3 : Finances ── */}
+                  <div>
+                    <p className={sectionTitleCls}>3. Évaluation financière</p>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <label className={labelCls}>Coût total estimé (FCFA) <span className="text-red-500">*</span></label>
+                          <input type="number" required min="1" value={formData.total_cost}
+                            onChange={e => setFormData({ ...formData, total_cost: e.target.value })}
+                            className={inputCls} placeholder="500 000" />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Part du patient (FCFA)</label>
+                          <input type="number" min="0" value={formData.patient_contribution}
+                            onChange={e => setFormData({ ...formData, patient_contribution: e.target.value })}
+                            className={inputCls} placeholder="0" />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Part de tiers (FCFA)</label>
+                          <input type="number" min="0" value={formData.third_party_contribution}
+                            onChange={e => setFormData({ ...formData, third_party_contribution: e.target.value })}
+                            className={inputCls} placeholder="0" />
+                          <p className="text-xs text-slate-400 mt-1">Famille, assurance, ONG…</p>
+                        </div>
+                      </div>
+
+                      {/* Montant demandé calculé */}
+                      <div className={`p-4 rounded-xl border-2 ${amountRequested > 0 ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-200'}`}>
+                        <p className="text-sm font-semibold text-slate-600 mb-1">Montant demandé (calculé automatiquement)</p>
+                        <p className={`text-2xl font-black ${amountRequested > 0 ? 'text-blue-700' : 'text-slate-400'}`}>
+                          {amountRequested > 0 ? `${amountRequested.toLocaleString('fr-FR')} FCFA` : '—'}
+                        </p>
+                        <p className="text-xs text-slate-400 mt-1">= Coût total − Part patient − Part de tiers</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── Section 4 : Contexte socio-économique ── */}
+                  <div>
+                    <p className={sectionTitleCls}>4. Contexte socio-économique</p>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <label className={labelCls}>Situation professionnelle <span className="text-red-500">*</span></label>
+                          <select required value={formData.professional_status}
+                            onChange={e => setFormData({ ...formData, professional_status: e.target.value })}
+                            className={inputCls}>
+                            <option value="ACTIF">En activité</option>
+                            <option value="SANS_EMPLOI">Sans emploi</option>
+                            <option value="RETRAITE">Retraité(e)</option>
+                            <option value="AUTRE">Autre</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className={labelCls}>Tranche de revenus <span className="text-red-500">*</span></label>
+                          <select required value={formData.income_range}
+                            onChange={e => setFormData({ ...formData, income_range: e.target.value })}
+                            className={inputCls}>
+                            <option value="LESS_50K">Moins de 50 000 FCFA/mois</option>
+                            <option value="50K_150K">50 000 – 150 000 FCFA/mois</option>
+                            <option value="MORE_150K">Plus de 150 000 FCFA/mois</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className={labelCls}>Personnes à charge <span className="text-red-500">*</span></label>
+                          <select required value={formData.dependents}
+                            onChange={e => setFormData({ ...formData, dependents: e.target.value })}
+                            className={inputCls}>
+                            <option value="0">Aucune</option>
+                            <option value="1-3">1 à 3</option>
+                            <option value="4-6">4 à 6</option>
+                            <option value="7+">7 ou plus</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className={labelCls}>Couvertures sociales (cochez toutes celles qui s'appliquent)</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {SOCIAL_SUPPORT_OPTIONS.map(opt => (
+                            <label key={opt.value} className={`flex items-center gap-3 p-3 border-2 rounded-xl cursor-pointer transition-all text-sm ${
+                              formData.social_support.includes(opt.value)
+                                ? 'border-blue-500 bg-blue-50 text-blue-700 font-semibold'
+                                : 'border-slate-200 text-slate-600 hover:border-blue-300'
+                            }`}>
+                              <input type="checkbox" checked={formData.social_support.includes(opt.value)}
+                                onChange={() => toggleSocialSupport(opt.value)} className="w-4 h-4 accent-blue-600" />
+                              {opt.label}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── Section 5 : Résumé et date ── */}
+                  <div>
+                    <p className={sectionTitleCls}>5. Résumé et délai</p>
+                    <div className="space-y-4">
+                      <div>
+                        <label className={labelCls}>
+                          Résumé du cas <span className="text-red-500">*</span>
+                          <span className="text-slate-400 font-normal ml-2">({formData.case_summary.length}/500 caractères)</span>
+                        </label>
+                        <textarea required rows={4} minLength={10} maxLength={500}
+                          value={formData.case_summary}
+                          onChange={e => setFormData({ ...formData, case_summary: e.target.value })}
+                          className={inputCls}
+                          placeholder="Décrivez la situation médicale et sociale du patient, le besoin précis et les circonstances qui rendent cette demande urgente..." />
+                      </div>
+
+                      <div>
+                        <label className={labelCls}>Date limite de collecte (optionnel)</label>
+                        <input type="date" value={formData.expiry_date}
+                          onChange={e => setFormData({ ...formData, expiry_date: e.target.value })}
+                          className={inputCls} min={new Date().toISOString().split('T')[0]} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button type="button" onClick={() => { setShowCreateForm(false); setFormData(EMPTY_FORM); setCreateError(''); }}
+                      className="flex-1 py-3 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition-all">
                       Annuler
                     </button>
-                    <button
-                      type="submit"
-                      disabled={createLoading}
-                      className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all disabled:opacity-50"
-                    >
-                      {createLoading ? 'Création...' : 'Créer la demande'}
+                    <button type="submit" disabled={createLoading || amountRequested <= 0}
+                      className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all disabled:opacity-50">
+                      {createLoading ? 'Envoi en cours...' : 'Soumettre la demande'}
                     </button>
                   </div>
                 </form>
