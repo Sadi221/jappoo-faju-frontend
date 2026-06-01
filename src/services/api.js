@@ -177,8 +177,18 @@ export const medicalRequestsAPI = {
     return response.data;
   },
 
-  // Uploader un document de preuve
+  // Uploader un document de preuve sur une demande existante
   uploadProof: async (requestId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post(`/medical-requests/${requestId}/upload-proof`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+
+  // Alias sémantique utilisé depuis le formulaire de création
+  uploadFile: async (requestId, file) => {
     const formData = new FormData();
     formData.append('file', file);
     const response = await api.post(`/medical-requests/${requestId}/upload-proof`, formData, {

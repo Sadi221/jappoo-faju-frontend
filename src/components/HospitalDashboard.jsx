@@ -51,6 +51,9 @@ const HospitalDashboard = () => {
   const [uploadingId, setUploadingId] = useState(null);
   const [uploadError, setUploadError] = useState('');
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const [proofFile, setProofFile] = useState(null);
+  const [uploadingProof, setUploadingProof] = useState(false);
+  const [proofFileError, setProofFileError] = useState('');
 
   // Montant demandé calculé en temps réel
   const amountRequested = useMemo(() => {
@@ -126,6 +129,22 @@ const HospitalDashboard = () => {
     }
   };
 
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const allowed = ['application/pdf', 'image/jpeg', 'image/png'];
+    if (!allowed.includes(file.type)) {
+      setProofFileError('Format non supporté. Utilisez PDF, JPG ou PNG.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setProofFileError('Fichier trop volumineux (max 5 Mo).');
+      return;
+    }
+    setProofFileError('');
+    setProofFile(file);
+  };
+
   const toggleSocialSupport = (value) => {
     setFormData(prev => {
       const current = prev.social_support;
@@ -167,11 +186,26 @@ const HospitalDashboard = () => {
         expiry_date: formData.expiry_date ? new Date(formData.expiry_date).toISOString() : null,
       };
 
-      await medicalRequestsAPI.create(payload);
+      const newRequest = await medicalRequestsAPI.create(payload);
+
+      // Upload du document si sélectionné (étape 2 — après obtention de l'id)
+      if (proofFile) {
+        setUploadingProof(true);
+        try {
+          await medicalRequestsAPI.uploadFile(newRequest.id, proofFile);
+        } catch (uploadErr) {
+          console.error("Erreur upload document:", uploadErr);
+          // La demande est créée — l'agent peut joindre le doc depuis la liste
+        } finally {
+          setUploadingProof(false);
+        }
+      }
+
       setCreateSuccess(true);
       setTimeout(() => {
         setShowCreateForm(false);
         setFormData(EMPTY_FORM);
+        setProofFile(null);
         setCreateSuccess(false);
         window.location.reload();
       }, 2000);
@@ -503,8 +537,16 @@ const HospitalDashboard = () => {
               {createSuccess ? (
                 <div className="text-center py-8">
                   <CheckCircle className="mx-auto mb-4 text-green-600" size={64} />
-                  <h3 className="text-2xl font-bold text-green-600 mb-2">Demande créée !</h3>
-                  <p className="text-slate-600">Elle sera visible après validation par l'admin</p>
+                  <h3 className="text-2xl font-bold text-green-600 mb-2">Demande soumise !</h3>
+                  <p className="text-slate-600 mb-2">
+                    Elle sera examinée par le Chef du Service Social et le Référent Médical
+                    avant publication.
+                  </p>
+                  {proofFile && (
+                    <p className="text-sm text-blue-600 font-medium flex items-center justify-center gap-2">
+                      <Paperclip size={14} /> Document joint : {proofFile.name}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -608,6 +650,43 @@ const HospitalDashboard = () => {
                         <input type="text" value={formData.prescription_ref}
                           onChange={e => setFormData({ ...formData, prescription_ref: e.target.value })}
                           className={inputCls} placeholder="Ex: ORD-2026-00789" maxLength={100} />
+                      </div>
+
+                      {/* Upload ordonnance */}
+                      <div>
+                        <label className={labelCls}>Joindre l'ordonnance / bon d'examen (optionnel)</label>
+                        <div className={`border-2 border-dashed rounded-xl transition-all ${
+                          proofFile ? 'border-blue-400 bg-blue-50' :
+                          proofFileError ? 'border-red-300 bg-red-50' :
+                          'border-slate-200 hover:border-blue-300 bg-slate-50'
+                        }`}>
+                          {!proofFile ? (
+                            <label className="flex flex-col items-center gap-2 p-5 cursor-pointer">
+                              <Upload size={26} className="text-slate-400" />
+                              <span className="text-sm font-semibold text-slate-600">Cliquez pour sélectionner</span>
+                              <span className="text-xs text-slate-400">PDF, JPG, PNG — max 5 Mo</span>
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden"
+                                onChange={handleFileSelect} />
+                            </label>
+                          ) : (
+                            <div className="flex items-center justify-between px-4 py-3">
+                              <div className="flex items-center gap-3">
+                                <Paperclip size={18} className="text-blue-500 flex-shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="text-sm font-semibold text-slate-700 truncate">{proofFile.name}</p>
+                                  <p className="text-xs text-slate-400">{(proofFile.size / 1024 / 1024).toFixed(2)} Mo</p>
+                                </div>
+                              </div>
+                              <button type="button"
+                                onClick={() => { setProofFile(null); setProofFileError(''); }}
+                                className="p-1.5 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-500 transition-all flex-shrink-0 ml-2">
+                                <X size={16} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        {proofFileError && <p className="text-xs text-red-500 mt-1">{proofFileError}</p>}
+                        <p className="text-xs text-slate-400 mt-1">Document anonymisé — aucun nom visible</p>
                       </div>
                     </div>
                   </div>
@@ -733,13 +812,13 @@ const HospitalDashboard = () => {
                   </div>
 
                   <div className="flex gap-3 pt-2">
-                    <button type="button" onClick={() => { setShowCreateForm(false); setFormData(EMPTY_FORM); setCreateError(''); }}
+                    <button type="button" onClick={() => { setShowCreateForm(false); setFormData(EMPTY_FORM); setProofFile(null); setProofFileError(''); setCreateError(''); }}
                       className="flex-1 py-3 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition-all">
                       Annuler
                     </button>
-                    <button type="submit" disabled={createLoading || amountRequested <= 0}
+                    <button type="submit" disabled={createLoading || uploadingProof || amountRequested <= 0}
                       className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all disabled:opacity-50">
-                      {createLoading ? 'Envoi en cours...' : 'Soumettre la demande'}
+                      {uploadingProof ? 'Upload document...' : createLoading ? 'Création...' : 'Soumettre la demande'}
                     </button>
                   </div>
                 </form>
