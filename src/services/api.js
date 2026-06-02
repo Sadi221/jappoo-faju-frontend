@@ -165,9 +165,15 @@ export const medicalRequestsAPI = {
     return response.data;
   },
 
-  // Valider une demande (ADMIN seulement)
+  // Valider une demande CSS+RM (ADMIN bypasse les deux) → VALIDATED
   validate: async (requestId) => {
     const response = await api.patch(`/medical-requests/${requestId}/validate`);
+    return response.data;
+  },
+
+  // Publier une demande VALIDATED → ACTIVE (visible donateurs)
+  publish: async (requestId) => {
+    const response = await api.patch(`/medical-requests/${requestId}/publish`);
     return response.data;
   },
 
