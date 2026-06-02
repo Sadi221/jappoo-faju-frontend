@@ -186,7 +186,7 @@ const AdminDashboard = () => {
     { key: 'VALIDATED',          label: 'À publier',    count: stats.validated,         color: 'purple' },
     { key: 'ACTIVE',             label: 'Actives',      count: stats.active,            color: 'green'  },
     { key: 'COMPLETED',          label: 'Complétées',   count: stats.completed,         color: 'blue'   },
-    { key: 'REJECTED',           label: 'Rejetées',     count: stats.rejected,          color: 'red'    },
+    { key: 'REJECTED',           label: 'Archives',     count: stats.rejected,          color: 'red'    },
     { key: 'HOSPITALS',          label: 'Hôpitaux',     count: hospitals.length,        color: 'indigo' },
     { key: 'AGENTS',             label: 'Agents',       count: agents.length,           color: 'slate'  },
   ];

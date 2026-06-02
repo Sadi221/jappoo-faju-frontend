@@ -54,6 +54,7 @@ const HospitalDashboard = () => {
   const [proofFile, setProofFile] = useState(null);
   const [uploadingProof, setUploadingProof] = useState(false);
   const [proofFileError, setProofFileError] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
 
   // Montant demandé calculé en temps réel
   const amountRequested = useMemo(() => {
@@ -342,7 +343,7 @@ const HospitalDashboard = () => {
               </div>
             ))}
           </div>
-        ) : requests.length === 0 ? (
+        ) : requests.filter(r => r.status !== 'REJECTED' && r.status !== 'EXPIRED').length === 0 && requests.filter(r => r.status === 'REJECTED' || r.status === 'EXPIRED').length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl shadow-lg">
             <FileText className="mx-auto mb-4 text-slate-400" size={64} />
             <p className="text-slate-600 text-lg mb-4">Aucune demande créée</p>
@@ -352,8 +353,9 @@ const HospitalDashboard = () => {
             </button>
           </div>
         ) : (
+          <>
           <div className="grid md:grid-cols-2 gap-6">
-            {requests.map((request) => {
+            {requests.filter(r => r.status !== 'REJECTED' && r.status !== 'EXPIRED').map((request) => {
               const percentage = (request.amount_raised / (request.amount_requested || request.amount_needed || 1)) * 100;
               return (
                 <div key={request.id} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all border border-blue-100">
@@ -464,6 +466,44 @@ const HospitalDashboard = () => {
               );
             })}
           </div>
+
+          {/* ── Section demandes archivées (rejetées / expirées) ── */}
+          {requests.filter(r => r.status === 'REJECTED' || r.status === 'EXPIRED').length > 0 && (
+            <div className="mt-8">
+              <button
+                onClick={() => setShowArchived(v => !v)}
+                className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-700 transition-colors mb-4"
+              >
+                {showArchived ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                Demandes archivées ({requests.filter(r => r.status === 'REJECTED' || r.status === 'EXPIRED').length})
+              </button>
+
+              {showArchived && (
+                <div className="grid md:grid-cols-2 gap-4">
+                  {requests.filter(r => r.status === 'REJECTED' || r.status === 'EXPIRED').map(request => (
+                    <div key={request.id} className="bg-slate-50 rounded-2xl border border-slate-200 p-5 opacity-70">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <h3 className="text-base font-bold text-slate-600 mb-0.5">
+                            {request.care_type || t(MEDICAL_NEED_LABELS, request.medical_need)}
+                          </h3>
+                          <p className="text-xs text-slate-400">{request.patient_pseudonym}</p>
+                        </div>
+                        {getStatusBadge(request.status)}
+                      </div>
+                      <p className="text-xs text-slate-500 line-clamp-2">{request.case_summary || request.description}</p>
+                      <p className="text-xs text-slate-400 mt-2">
+                        {new Date(request.created_at).toLocaleDateString('fr-FR')}
+                        {' · '}
+                        {(request.amount_requested || request.amount_needed || 0).toLocaleString()} FCFA
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          </>
         )}
       </div>
 
