@@ -245,13 +245,15 @@ const HospitalDashboard = () => {
 
   const getStatusBadge = (status) => {
     const badges = {
-      PENDING:   { bg: 'bg-yellow-100', text: 'text-yellow-700' },
-      ACTIVE:    { bg: 'bg-green-100',  text: 'text-green-700' },
-      COMPLETED: { bg: 'bg-blue-100',   text: 'text-blue-700' },
-      REJECTED:  { bg: 'bg-red-100',    text: 'text-red-700' },
-      EXPIRED:   { bg: 'bg-slate-100',  text: 'text-slate-500' },
+      PENDING_VALIDATION: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
+      VALIDATED:          { bg: 'bg-purple-100', text: 'text-purple-700' },
+      PENDING:            { bg: 'bg-yellow-100', text: 'text-yellow-700' },
+      ACTIVE:             { bg: 'bg-green-100',  text: 'text-green-700'  },
+      COMPLETED:          { bg: 'bg-blue-100',   text: 'text-blue-700'   },
+      REJECTED:           { bg: 'bg-red-100',    text: 'text-red-700'    },
+      EXPIRED:            { bg: 'bg-slate-100',  text: 'text-slate-500'  },
     };
-    const badge = badges[status] || badges.PENDING;
+    const badge = badges[status] || badges.PENDING_VALIDATION;
     return (
       <span className={`px-3 py-1 rounded-full text-xs font-bold ${badge.bg} ${badge.text}`}>
         {t(REQUEST_STATUS_LABELS, status)}

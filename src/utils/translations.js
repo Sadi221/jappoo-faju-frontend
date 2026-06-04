@@ -17,12 +17,14 @@ export const URGENCY_LABELS = {
 };
 
 export const REQUEST_STATUS_LABELS = {
-  PENDING: 'En attente',
-  ACTIVE: 'Active',
-  COMPLETED: 'Complétée',
-  REJECTED: 'Rejetée',
-  EXPIRED: 'Expirée',
-  CLOSED: 'Clôturée',
+  PENDING_VALIDATION: 'En attente de validation',
+  VALIDATED:          'Validée — à publier',
+  PENDING:            'En attente',
+  ACTIVE:             'Active',
+  COMPLETED:          'Complétée',
+  REJECTED:           'Rejetée',
+  EXPIRED:            'Expirée',
+  CLOSED:             'Clôturée',
 };
 
 export const DONATION_STATUS_LABELS = {
