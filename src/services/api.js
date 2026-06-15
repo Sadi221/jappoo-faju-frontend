@@ -264,6 +264,19 @@ export const paymentsAPI = {
   },
 
   /**
+   * Créer un checkout-intent HelloAsso (don en EUR, donateurs européens)
+   * Retourne { checkout_intent_id, redirect_url }
+   */
+  createHelloAssoCheckout: async (medicalRequestId, amountEur, donorEmail) => {
+    const response = await api.post('/payments/helloasso/create-checkout', {
+      medical_request_id: medicalRequestId,
+      amount_eur: amountEur,
+      donor_email: donorEmail || undefined,
+    });
+    return response.data;
+  },
+
+  /**
    * Vérifier le statut d'un paiement
    */
   getPaymentStatus: async (paymentId) => {
