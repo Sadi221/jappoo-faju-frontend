@@ -1,21 +1,11 @@
 import { useState } from 'react';
-import { X, Heart, Phone, CreditCard, Loader2, CheckCircle, AlertCircle, User, Mail } from 'lucide-react';
+import { X, Heart, Loader2, AlertCircle, User, Mail } from 'lucide-react';
 import { paymentsAPI } from '../services/api';
 import { useLang, useTranslation, useCurrencyRates } from '../utils/i18n.jsx';
 import { formatConversion } from '../utils/currency';
 
 const HELLOASSO_RATE = 655.957; // 1 EUR = 655.957 XOF (taux fixe CFA)
-
-const PAYMENT_METHODS_LOCAL = [
-  { id: 'PAYDUNYA', label: 'Mobile Money', sub: 'Wave · Orange Money', emoji: '📱', color: 'blue' },
-  { id: 'STRIPE',   label: 'Carte bancaire', sub: 'Visa · Mastercard',  emoji: '💳', color: 'purple' },
-];
-const PAYMENT_METHODS = [
-  ...PAYMENT_METHODS_LOCAL,
-  { id: 'HELLOASSO', label: 'Don en ligne', sub: 'HelloAsso · Europe', emoji: '🌍', color: 'green' },
-];
-
-const suggestedAmountsEur = [5, 10, 20, 50, 100, 200];
+const SUGGESTED_AMOUNTS_EUR = [10, 20, 50];
 
 const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
   medicalRequest = medicalRequest || request;
@@ -24,135 +14,54 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
   const { usdRate } = useCurrencyRates();
   const conv = (fcfa) => formatConversion(fcfa, lang, usdRate);
 
-  // Détection guest : pas de token JWT en localStorage
-  const isGuest = !localStorage.getItem('token');
-
   const needLabel = (need) => {
-    const map = { SURGERY: 'need_surgery', MEDICATION: 'need_medication', EXAM: 'need_exam', KIT: 'need_kit', DIALYSIS: 'need_dialysis' };
+    const map = { SURGERY: 'need_surgery', MEDICATION: 'need_medication', EXAM: 'need_exam', KIT: 'need_kit', DIALYSIS: 'need_dialysis', MEDICAMENTS: 'need_medication', EXAMENS: 'need_exam' };
     return t(map[need] || need);
   };
 
   const [amount, setAmount] = useState('');
   const [customAmount, setCustomAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('PAYDUNYA');
   const [donorName, setDonorName] = useState('');
   const [donorEmail, setDonorEmail] = useState('');
-  const [donorPhone, setDonorPhone] = useState('');
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
-  const [isMock, setIsMock] = useState(false);
 
-  const suggestedAmounts = [10000, 25000, 50000, 100000, 250000, 500000];
-  const selectedMethod = PAYMENT_METHODS.find(m => m.id === paymentMethod);
+  const formatAmount = (value) => new Intl.NumberFormat('fr-FR').format(value);
+  const goal = medicalRequest?.amount_needed || medicalRequest?.amount_requested || 0;
 
   if (isOpen === false || !medicalRequest) return null;
-
-  const handlePaymentMethodChange = (method) => {
-    setPaymentMethod(method);
-    setAmount('');
-    setCustomAmount('');
-    setError(null);
-  };
 
   const handleAmountSelect = (value) => {
     setAmount(value);
     setCustomAmount('');
+    setError(null);
   };
 
   const handleCustomAmountChange = (e) => {
-    const value = e.target.value.replace(/\D/g, '');
-    setCustomAmount(value);
-    setAmount(value);
-  };
-
-  const handleCustomAmountChangeEur = (e) => {
     const value = e.target.value.replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1');
     setCustomAmount(value);
     setAmount(value);
+    setError(null);
   };
-
-  const formatAmount = (value) => new Intl.NumberFormat('fr-FR').format(value);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // ── HelloAsso : flux direct EUR, sans createDonation (la donation est créée par le webhook) ──
-    if (paymentMethod === 'HELLOASSO') {
-      const amountEur = parseFloat(amount);
-      if (!amountEur || amountEur < 1) {
-        setError('Montant minimum : 1 €');
-        return;
-      }
-      setLoading(true);
-      setError(null);
-      try {
-        const result = await paymentsAPI.createHelloAssoCheckout(
-          medicalRequest.id,
-          amountEur,
-          donorEmail || undefined,
-        );
-        window.location.href = result.redirect_url;
-        // La page navigue — pas de finally nécessaire
-      } catch (err) {
-        setError(err.response?.data?.detail || 'Erreur HelloAsso — réessayez plus tard');
-        setLoading(false);
-      }
+    const amountEur = parseFloat(amount);
+    if (!amountEur || amountEur < 1) {
+      setError('Montant minimum : 1 €');
       return;
     }
-
-    if (!amount || amount < 1000) {
-      setError(t('donate_min_error'));
-      return;
-    }
-
     setLoading(true);
     setError(null);
-
     try {
-      // Étape 1 : créer la donation — donor_name/email persistés en base pour la traçabilité guest
-      const donation = await paymentsAPI.createDonation({
-        medical_request_id: medicalRequest.id,
-        amount: parseFloat(amount),
-        payment_method: paymentMethod,
-        donor_name: donorName || undefined,
-        donor_email: donorEmail || undefined,
-      });
-
-      let paymentResponse;
-
-      if (paymentMethod === 'PAYDUNYA') {
-        paymentResponse = await paymentsAPI.initiatePayDunyaPayment({
-          donation_id: donation.donation_id,
-          amount: parseFloat(amount),
-          payer_name: donorName || undefined,
-          payer_email: donorEmail || undefined,
-          payer_phone: donorPhone ? `+221${donorPhone}` : undefined,
-        });
-      } else {
-        // STRIPE
-        paymentResponse = await paymentsAPI.createStripeCheckout({
-          donation_id: donation.donation_id,
-          amount: parseFloat(amount),
-          payer_name: donorName || undefined,
-          payer_email: donorEmail || undefined,
-        });
-      }
-
-      const mock =
-        paymentResponse.checkout_url?.includes('mock') ||
-        paymentResponse.checkout_url?.includes('localhost');
-
-      if (paymentResponse.checkout_url && !mock) {
-        window.location.href = paymentResponse.checkout_url;
-      } else {
-        setIsMock(mock);
-        setSuccess(true);
-      }
+      const result = await paymentsAPI.createHelloAssoCheckout(
+        medicalRequest.id,
+        amountEur,
+        donorEmail || undefined,
+      );
+      window.location.href = result.redirect_url;
     } catch (err) {
-      console.error('Erreur donation:', err);
-      setError(err.response?.data?.detail || "Erreur lors de l'initiation du paiement");
-    } finally {
+      setError(err.response?.data?.detail || 'Erreur HelloAsso — réessayez plus tard');
       setLoading(false);
     }
   };
@@ -163,61 +72,17 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
       setCustomAmount('');
       setDonorName('');
       setDonorEmail('');
-      setDonorPhone('');
       setError(null);
-      setSuccess(false);
-      setIsMock(false);
       onClose();
     }
   };
 
-  // ── Vue succès ──────────────────────────────────────────────
-  if (success) {
-    return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-3xl max-w-md w-full p-8 relative">
-          <button onClick={handleClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
-            <X size={24} />
-          </button>
-          <div className="text-center space-y-6">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle className="text-green-600" size={40} />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold text-slate-800 mb-2">{t('donate_success_title')}</h3>
-              <p className="text-slate-600">
-                {t('donate_success_msg')}{' '}
-                <span className="font-bold text-blue-600">{formatAmount(amount)} FCFA</span>{' '}
-                {t('donate_success_via')} <strong>{selectedMethod?.label}</strong> {t('donate_success_initiated')}
-              </p>
-            </div>
-            {isMock && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left">
-                <p className="text-sm text-amber-800 font-semibold mb-1">{t('donate_sandbox_title')}</p>
-                <p className="text-xs text-amber-700">
-                  {t('donate_sandbox_msg')} {selectedMethod?.label} {t('donate_sandbox_end')}
-                </p>
-              </div>
-            )}
-            <button
-              onClick={handleClose}
-              className="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all"
-            >
-              {t('donate_close')}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Formulaire principal ─────────────────────────────────────
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto relative">
 
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-cyan-500 text-white p-6 rounded-t-3xl">
+        <div className="sticky top-0 bg-gradient-to-r from-green-600 to-emerald-500 text-white p-6 rounded-t-3xl">
           <button
             onClick={handleClose}
             disabled={loading}
@@ -227,11 +92,14 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
           </button>
           <div className="flex items-center space-x-3">
             <Heart size={32} fill="white" />
-            <h2 className="text-2xl font-bold">{t('donate_title')}</h2>
+            <div>
+              <h2 className="text-2xl font-bold">{t('donate_title')}</h2>
+              <p className="text-white/80 text-sm mt-0.5">🌍 Via HelloAsso · Paiement en euros</p>
+            </div>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
 
           {/* Résumé demande */}
           <div className="bg-slate-50 rounded-xl p-4 space-y-2">
@@ -241,223 +109,111 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-slate-600">{t('donate_need')} :</span>
-              <span className="font-semibold text-slate-800">{needLabel(medicalRequest.medical_need)}</span>
+              <span className="font-semibold text-slate-800">
+                {needLabel(medicalRequest.care_type || medicalRequest.medical_need)}
+              </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-slate-600">{t('donate_goal')} :</span>
               <span className="font-semibold text-blue-600">
-                {formatAmount(medicalRequest.amount_needed)} FCFA
-                {conv(medicalRequest.amount_needed) && <span className="text-slate-400 font-normal ml-1 text-xs">{conv(medicalRequest.amount_needed)}</span>}
+                {formatAmount(goal)} FCFA
+                {conv(goal) && <span className="text-slate-400 font-normal ml-1 text-xs">{conv(goal)}</span>}
               </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-slate-600">{t('donate_collected')} :</span>
               <span className="font-semibold text-green-600">
                 {formatAmount(medicalRequest.amount_raised)} FCFA
-                {conv(medicalRequest.amount_raised) && <span className="text-slate-400 font-normal ml-1 text-xs">{conv(medicalRequest.amount_raised)}</span>}
+                {conv(medicalRequest.amount_raised) && (
+                  <span className="text-slate-400 font-normal ml-1 text-xs">{conv(medicalRequest.amount_raised)}</span>
+                )}
               </span>
             </div>
           </div>
 
           {/* Montants suggérés */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-3">
-              {paymentMethod === 'HELLOASSO' ? 'Montant du don (en euros)' : t('donate_choose_amount')}
-            </label>
-            {paymentMethod === 'HELLOASSO' ? (
-              <div className="grid grid-cols-3 gap-3">
-                {suggestedAmountsEur.map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => handleAmountSelect(value)}
-                    className={`py-3 px-2 rounded-xl font-semibold transition-all leading-tight ${
-                      amount == value
-                        ? 'bg-green-600 text-white shadow-lg shadow-green-500/30'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    }`}
-                  >
-                    <span className="block">{value} €</span>
-                    <span className={`block text-xs font-normal mt-0.5 ${amount == value ? 'text-white/70' : 'text-slate-400'}`}>
-                      ≈ {Math.round(value * HELLOASSO_RATE).toLocaleString('fr-FR')} F
-                    </span>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-3 gap-3">
-                {suggestedAmounts.map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => handleAmountSelect(value)}
-                    className={`py-3 px-2 rounded-xl font-semibold transition-all leading-tight ${
-                      amount == value
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    }`}
-                  >
-                    <span className="block">{value >= 1000 ? `${value / 1000}K` : value}</span>
-                    <span className={`block text-xs font-normal mt-0.5 ${amount == value ? 'text-white/70' : 'text-slate-400'}`}>
-                      {conv(value)}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
+            <label className="block text-sm font-semibold text-slate-700 mb-3">Montant du don</label>
+            <div className="grid grid-cols-3 gap-3">
+              {SUGGESTED_AMOUNTS_EUR.map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => handleAmountSelect(value)}
+                  className={`py-4 px-2 rounded-xl font-semibold transition-all leading-tight ${
+                    amount == value
+                      ? 'bg-green-600 text-white shadow-lg shadow-green-500/30'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <span className="block text-lg">{value} €</span>
+                  <span className={`block text-xs font-normal mt-0.5 ${amount == value ? 'text-white/70' : 'text-slate-400'}`}>
+                    ≈ {Math.round(value * HELLOASSO_RATE).toLocaleString('fr-FR')} F
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Montant personnalisé */}
+          {/* Montant libre */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">{t('donate_custom_amount')}</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">Autre montant</label>
             <div className="relative">
               <input
                 type="text"
                 value={customAmount}
-                onChange={paymentMethod === 'HELLOASSO' ? handleCustomAmountChangeEur : handleCustomAmountChange}
-                placeholder={paymentMethod === 'HELLOASSO' ? 'Ex : 35' : 'Ex : 75 000'}
-                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+                onChange={handleCustomAmountChange}
+                placeholder="Ex : 35"
+                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-green-500 focus:outline-none transition-colors"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 font-semibold">
-                {paymentMethod === 'HELLOASSO' ? '€' : 'FCFA'}
-              </span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 font-semibold">€</span>
             </div>
-            {paymentMethod === 'HELLOASSO' ? (
-              parseFloat(amount) >= 1 && (
-                <p className="text-xs text-slate-400 mt-1">
-                  ≈ {Math.round(parseFloat(amount) * HELLOASSO_RATE).toLocaleString('fr-FR')} FCFA
-                </p>
-              )
-            ) : (
-              amount >= 1000 && conv(amount) && (
-                <p className="text-xs text-slate-400 mt-1">{conv(amount)}</p>
-              )
+            {parseFloat(amount) >= 1 && !SUGGESTED_AMOUNTS_EUR.includes(parseFloat(amount)) && (
+              <p className="text-xs text-slate-400 mt-1">
+                ≈ {Math.round(parseFloat(amount) * HELLOASSO_RATE).toLocaleString('fr-FR')} FCFA
+              </p>
             )}
           </div>
 
-          {/* Moyen de paiement */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-3">{t('donate_payment_method')}</label>
-            <div className="grid grid-cols-2 gap-3">
-              {PAYMENT_METHODS_LOCAL.map((method) => (
-                <button
-                  key={method.id}
-                  type="button"
-                  onClick={() => handlePaymentMethodChange(method.id)}
-                  className={`py-4 px-3 rounded-xl font-semibold text-sm transition-all border-2 ${
-                    paymentMethod === method.id
-                      ? 'border-blue-600 bg-blue-50 text-blue-700'
-                      : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                  }`}
-                >
-                  <span className="block text-2xl mb-1">{method.emoji}</span>
-                  <span className="block font-bold">{method.label}</span>
-                  <span className="block text-xs text-slate-500 mt-0.5">{method.sub}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* HelloAsso — donateurs européens */}
-            <div className="mt-2">
-              <p className="text-xs text-slate-400 text-center my-2">— Depuis l'Europe —</p>
-              <button
-                type="button"
-                onClick={() => handlePaymentMethodChange('HELLOASSO')}
-                className={`w-full py-3 px-4 rounded-xl font-semibold text-sm transition-all border-2 flex items-center gap-3 ${
-                  paymentMethod === 'HELLOASSO'
-                    ? 'border-green-600 bg-green-50 text-green-700'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                }`}
-              >
-                <span className="text-2xl">🌍</span>
-                <span>
-                  <span className="block font-bold text-left">Don en ligne · HelloAsso</span>
-                  <span className="block text-xs text-slate-500 font-normal">Carte bancaire · Virement · Montant en euros</span>
-                </span>
-              </button>
-            </div>
-
-            {/* Info contextuelle */}
-            {paymentMethod === 'PAYDUNYA' && (
-              <div className="mt-3 p-3 bg-blue-50 rounded-xl flex gap-2 text-xs text-blue-700">
-                <span>📱</span>
-                <span>{t('donate_paydunya_info')}</span>
-              </div>
-            )}
-            {paymentMethod === 'STRIPE' && (
-              <div className="mt-3 p-3 bg-purple-50 rounded-xl flex gap-2 text-xs text-purple-700">
-                <CreditCard size={14} className="flex-shrink-0 mt-0.5" />
-                <span>{t('donate_stripe_info')}</span>
-              </div>
-            )}
-            {paymentMethod === 'HELLOASSO' && (
-              <div className="mt-3 p-3 bg-green-50 rounded-xl flex gap-2 text-xs text-green-700">
-                <span>🔒</span>
-                <span>Paiement sécurisé par HelloAsso. Vous serez redirigé pour finaliser votre don en euros — aucune information bancaire n'est transmise à JAPPOO FAJU.</span>
-              </div>
-            )}
-          </div>
-
-          {/* Téléphone PayDunya — affiché pour tous (spécifique au paiement mobile) */}
-          {paymentMethod === 'PAYDUNYA' && (
+          {/* Infos donateur (optionnel pour tous) */}
+          <div className="space-y-3 border border-slate-100 rounded-2xl p-4 bg-slate-50/50">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              Vos informations <span className="font-normal normal-case text-slate-400">— optionnel</span>
+            </p>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
-                <Phone size={14} className="inline mr-1" />
-                {t('donate_phone_label')} <span className="text-slate-400 font-normal">({t('donate_optional')})</span>
+                <User size={13} className="inline mr-1" />
+                {t('donate_name_label')}
               </label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-semibold">+221</span>
-                <input
-                  type="tel"
-                  value={donorPhone}
-                  onChange={(e) => setDonorPhone(e.target.value.replace(/\D/g, ''))}
-                  placeholder="77 123 45 67"
-                  maxLength={9}
-                  className="w-full pl-16 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
-                />
-              </div>
+              <input
+                type="text"
+                value={donorName}
+                onChange={(e) => setDonorName(e.target.value)}
+                placeholder={lang === 'fr' ? 'Votre nom' : 'Your name'}
+                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-green-500 focus:outline-none transition-colors bg-white"
+              />
             </div>
-          )}
-
-          {/* Infos donateur — uniquement pour les guests (non connectés) */}
-          {isGuest && (
-            <div className="space-y-4 border border-slate-100 rounded-2xl p-4 bg-slate-50/50">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                {t('donate_guest_section')}
-              </p>
-
-              {/* Nom */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  <User size={13} className="inline mr-1" />
-                  {t('donate_name_label')}
-                </label>
-                <input
-                  type="text"
-                  value={donorName}
-                  onChange={(e) => setDonorName(e.target.value)}
-                  placeholder={lang === 'fr' ? 'Votre nom (optionnel)' : 'Your name (optional)'}
-                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors bg-white"
-                />
-              </div>
-
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  <Mail size={13} className="inline mr-1" />
-                  {t('donate_email_label')}
-                </label>
-                <input
-                  type="email"
-                  value={donorEmail}
-                  onChange={(e) => setDonorEmail(e.target.value)}
-                  placeholder={lang === 'fr' ? 'Votre email (optionnel)' : 'Your email (optional)'}
-                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors bg-white"
-                />
-                <p className="text-xs text-slate-400 mt-1.5">{t('donate_fiscal_hint')}</p>
-              </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                <Mail size={13} className="inline mr-1" />
+                {t('donate_email_label')}
+              </label>
+              <input
+                type="email"
+                value={donorEmail}
+                onChange={(e) => setDonorEmail(e.target.value)}
+                placeholder={lang === 'fr' ? 'Votre email' : 'Your email'}
+                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-green-500 focus:outline-none transition-colors bg-white"
+              />
+              <p className="text-xs text-slate-400 mt-1.5">{t('donate_fiscal_hint')}</p>
             </div>
-          )}
+          </div>
+
+          {/* Info redirection */}
+          <div className="p-3 bg-green-50 rounded-xl flex gap-2 text-xs text-green-700">
+            <span>🔒</span>
+            <span>Vous serez redirigé vers la page de paiement sécurisée HelloAsso pour finaliser votre don — aucune information bancaire n'est transmise à JAPPOO FAJU.</span>
+          </div>
 
           {/* Erreur */}
           {error && (
@@ -468,7 +224,7 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
           )}
 
           {/* Boutons */}
-          <div className="flex space-x-3 pt-2">
+          <div className="flex space-x-3 pt-1">
             <button
               type="button"
               onClick={handleClose}
@@ -480,23 +236,17 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
             <button
               type="submit"
               disabled={loading || !amount}
-              className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-xl hover:shadow-blue-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-xl hover:shadow-green-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               {loading ? (
                 <>
                   <Loader2 className="animate-spin" size={20} />
-                  <span>{t('donate_processing')}</span>
+                  <span>Redirection...</span>
                 </>
               ) : (
                 <>
                   <Heart size={20} fill="white" />
-                  <span>
-                    {paymentMethod === 'HELLOASSO'
-                      ? 'Continuer vers HelloAsso'
-                      : paymentMethod === 'STRIPE'
-                      ? t('donate_pay_card')
-                      : t('donate_contribute')}
-                  </span>
+                  <span>Continuer vers HelloAsso</span>
                 </>
               )}
             </button>
