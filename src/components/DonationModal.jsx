@@ -215,6 +215,12 @@ const DonationModal = ({ isOpen, onClose, medicalRequest, request }) => {
             <span>Vous serez redirigé vers la page de paiement sécurisée HelloAsso pour finaliser votre don — aucune information bancaire n'est transmise à JAPPOO FAJU.</span>
           </div>
 
+          {/* Mention rassurante */}
+          <p className="text-xs text-slate-400 text-center leading-relaxed">
+            💡 Après votre paiement, vous recevrez un email de confirmation de HelloAsso.
+            Si une page de chargement s'affiche, votre don est bien enregistré.
+          </p>
+
           {/* Erreur */}
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start space-x-3">
