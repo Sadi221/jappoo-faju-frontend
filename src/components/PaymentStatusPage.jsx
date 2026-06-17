@@ -33,6 +33,7 @@ const PaymentStatusPage = ({ status: pageStatus }) => {
     wave: 'Wave',
     orange_money: 'Orange Money',
     stripe: 'carte bancaire',
+    helloasso: 'HelloAsso',
   }[provider] || 'paiement';
 
   return (
